@@ -1,0 +1,67 @@
+
+vmlinux.elf:     file format elf64-littleaarch64
+
+
+Disassembly of section .kernel:
+
+ffffffc0112ed930 <__arm64_sys_recvmmsg>:
+ffffffc0112ed930:	d10183ff 	sub	sp, sp, #0x60
+ffffffc0112ed934:	f800865e 	str	x30, [x18], #8
+ffffffc0112ed938:	a9027bfd 	stp	x29, x30, [sp, #32]
+ffffffc0112ed93c:	f9001bf7 	str	x23, [sp, #48]
+ffffffc0112ed940:	a90457f6 	stp	x22, x21, [sp, #64]
+ffffffc0112ed944:	a9054ff4 	stp	x20, x19, [sp, #80]
+ffffffc0112ed948:	910083fd 	add	x29, sp, #0x20
+ffffffc0112ed94c:	b0008768 	adrp	x8, ffffffc0123da000 <ncm_fops+0x48>
+ffffffc0112ed950:	f9440908 	ldr	x8, [x8, #2064]
+ffffffc0112ed954:	f81f83a8 	stur	x8, [x29, #-8]
+ffffffc0112ed958:	b9401813 	ldr	w19, [x0, #24]
+ffffffc0112ed95c:	37f801b3 	tbnz	w19, #31, ffffffc0112ed990 <__arm64_sys_recvmmsg+0x60>
+ffffffc0112ed960:	b9400016 	ldr	w22, [x0]
+ffffffc0112ed964:	f9400415 	ldr	x21, [x0, #8]
+ffffffc0112ed968:	f9401014 	ldr	x20, [x0, #32]
+ffffffc0112ed96c:	b9401017 	ldr	w23, [x0, #16]
+ffffffc0112ed970:	a900ffff 	stp	xzr, xzr, [sp, #8]
+ffffffc0112ed974:	b4000134 	cbz	x20, ffffffc0112ed998 <__arm64_sys_recvmmsg+0x68>
+ffffffc0112ed978:	910023e0 	add	x0, sp, #0x8
+ffffffc0112ed97c:	aa1403e1 	mov	x1, x20
+ffffffc0112ed980:	97c2dd98 	bl	ffffffc0103a4fe0 <get_timespec64>
+ffffffc0112ed984:	340001a0 	cbz	w0, ffffffc0112ed9b8 <__arm64_sys_recvmmsg+0x88>
+ffffffc0112ed988:	128001b3 	mov	w19, #0xfffffff2            	// #-14
+ffffffc0112ed98c:	1400001a 	b	ffffffc0112ed9f4 <__arm64_sys_recvmmsg+0xc4>
+ffffffc0112ed990:	928002a0 	mov	x0, #0xffffffffffffffea    	// #-22
+ffffffc0112ed994:	14000019 	b	ffffffc0112ed9f8 <__arm64_sys_recvmmsg+0xc8>
+ffffffc0112ed998:	2a1603e0 	mov	w0, w22
+ffffffc0112ed99c:	aa1503e1 	mov	x1, x21
+ffffffc0112ed9a0:	2a1703e2 	mov	w2, w23
+ffffffc0112ed9a4:	2a1303e3 	mov	w3, w19
+ffffffc0112ed9a8:	aa1f03e4 	mov	x4, xzr
+ffffffc0112ed9ac:	97fffe23 	bl	ffffffc0112ed238 <do_recvmmsg>
+ffffffc0112ed9b0:	2a0003f3 	mov	w19, w0
+ffffffc0112ed9b4:	14000010 	b	ffffffc0112ed9f4 <__arm64_sys_recvmmsg+0xc4>
+ffffffc0112ed9b8:	910023e4 	add	x4, sp, #0x8
+ffffffc0112ed9bc:	2a1603e0 	mov	w0, w22
+ffffffc0112ed9c0:	aa1503e1 	mov	x1, x21
+ffffffc0112ed9c4:	2a1703e2 	mov	w2, w23
+ffffffc0112ed9c8:	2a1303e3 	mov	w3, w19
+ffffffc0112ed9cc:	97fffe1b 	bl	ffffffc0112ed238 <do_recvmmsg>
+ffffffc0112ed9d0:	2a0003f3 	mov	w19, w0
+ffffffc0112ed9d4:	7100041f 	cmp	w0, #0x1
+ffffffc0112ed9d8:	540000eb 	b.lt	ffffffc0112ed9f4 <__arm64_sys_recvmmsg+0xc4>  // b.tstop
+ffffffc0112ed9dc:	910023e0 	add	x0, sp, #0x8
+ffffffc0112ed9e0:	aa1403e1 	mov	x1, x20
+ffffffc0112ed9e4:	97c2dda4 	bl	ffffffc0103a5074 <put_timespec64>
+ffffffc0112ed9e8:	7100001f 	cmp	w0, #0x0
+ffffffc0112ed9ec:	128001a8 	mov	w8, #0xfffffff2            	// #-14
+ffffffc0112ed9f0:	1a880273 	csel	w19, w19, w8, eq	// eq = none
+ffffffc0112ed9f4:	93407e60 	sxtw	x0, w19
+ffffffc0112ed9f8:	b0008769 	adrp	x9, ffffffc0123da000 <ncm_fops+0x48>
+ffffffc0112ed9fc:	f85f83a8 	ldur	x8, [x29, #-8]
+ffffffc0112eda00:	f9440929 	ldr	x9, [x9, #2064]
+ffffffc0112eda04:	eb08013f 	cmp	x9, x8
+ffffffc0112eda08:	54000101 	b.ne	ffffffc0112eda28 <__arm64_sys_recvmmsg+0xf8>  // b.any
+ffffffc0112eda0c:	a9427bfd 	ldp	x29, x30, [sp, #32]
+ffffffc0112eda10:	a9454ff4 	ldp	x20, x19, [sp, #80]
+ffffffc0112eda14:	a94457f6 	ldp	x22, x21, [sp, #64]
+ffffffc0112eda18:	f9401bf7 	ldr	x23, [sp, #48]
+ffffffc0112eda1c:	f85f8e5e 	ldr	x30, [x18, #-8]!

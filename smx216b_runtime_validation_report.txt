@@ -1,0 +1,88 @@
+=== SM-X216B RUNTIME VALIDATION REPORT ===
+Target Device: Samsung Galaxy Tab A9+ 5G (SM-X216B / gta9p)
+Firmware     : X216BXXS9DYJ7
+Kernel       : 5.4.249-qgki-31053672-abX216BXXS9DYJ7
+Architecture : AArch64 / Qualcomm SM6375
+
+====================================================================================================
+1. STACK LIFECYCLE & VMAP_STACK ARCHITECTURE
+====================================================================================================
+- CONFIG_VMAP_STACK Behavior:
+  [VERIFIED_STATIC] The kernel enables CONFIG_VMAP_STACK=y.
+  Thread stacks are 16KB (4 pages) virtually mapped with guard pages on both sides.
+- Allocation / Teardown Path:
+  [VERIFIED_STATIC]
+  * Allocation: dup_task_struct (0xffffffc0102f4068) -> alloc_thread_stack_node.
+  * Teardown  : put_task_stack (0xffffffc0102f04b0) -> free_thread_stack (0xffffffc0102f3ea4).
+- Per-CPU Stack Cache:
+  [VERIFIED_STATIC]
+  * cached_stacks array is located at 0xffffffc012668be0 (per-CPU pointer accessed via tpidr_el1 + 0xbe0).
+  * In free_thread_stack (0xffffffc0102f3f50):
+    0xffffffc0102f3f50: mrs  x9, tpidr_el1
+    0xffffffc0102f3f54: ldr  x10, [x19, #0xb08]      ; x10 = stack vm_struct
+    0xffffffc0102f3f58: add  x9, x9, x21             ; x21 = &cached_stacks
+    0xffffffc0102f3f60: ldxr x22, [x9]
+    0xffffffc0102f3f6c: stxr w11, x10, [x9]          ; atomically saves freed stack into per-CPU cache
+  * A newly created thread on the same CPU immediately re-allocates the most recently freed stack
+    from cached_stacks without memory re-zeroing, preserving stale data patterns across invocations.
+
+====================================================================================================
+2. BENIGN RUNTIME OBSERVABILITY OPTIONS
+====================================================================================================
+- CONFIG_KPROBES (CONFIG_KPROBES=y, CONFIG_KPROBES_QGKI=y):
+  Allows registering safe read-only tracepoints at put_task_stack / free_thread_stack / do_futex.
+- /proc/sched_debug & /proc/<pid>/stack:
+  Available in root/debug shell to observe current task stack depth and scheduler CPU affinity.
+- Ftrace / Function Graph Tracer (CONFIG_FUNCTION_TRACER=y):
+  Allows dynamic call-depth tracing without binary modification or memory corruption.
+
+====================================================================================================
+3. QEMU FEASIBILITY ASSESSMENT
+====================================================================================================
+[HARDWARE_REQUIRED]
+- Can the extracted kernel boot stand-alone in generic QEMU (e.g. qemu-system-aarch64 -M virt)?
+  * Result: NO.
+  * Reason:
+    1. Qualcomm QGKI SoC Dependency: The kernel depends on proprietary Qualcomm SM6375 platform clock,
+       power management (SPM/LPM), and inter-processor communication (SMP2P/SMD/QMI/RPMh) drivers.
+    2. Missing Device Tree Blob (DTB): The extracted boot.img (Header v3) contains only the kernel
+       payload and ramdisk. The Device Tree Blob (DTB) is located in the separate vendor_boot or dtb
+       partition, which is not present in boot.img.
+    3. Generic QEMU virt machine lacks Snapdragon 695 platform peripherals, causing immediate boot halt
+       at platform device probe.
+
+====================================================================================================
+4. HARDWARE-ONLY GAPS
+====================================================================================================
+Properties that strictly require on-device physical testing:
+1. Thread Stack Recycling Latency [HARDWARE_REQUIRED]:
+   Exact elapsed time in milliseconds between pthread_exit() releasing a stack into cached_stacks
+   and a subsequent clone() re-acquiring that same virtual stack memory on SM6375 big vs LITTLE cores.
+2. Scheduler Core Affinity / CPU Migration [HARDWARE_REQUIRED]:
+   Whether task migration across Kryo Gold (Cortex-A78) and Kryo Silver (Cortex-A55) cores causes
+   cross-CPU cached_stacks misses.
+3. Live SELinux & DEFEX Policy Enforcement [HARDWARE_REQUIRED]:
+   Validating whether ordinary untrusted userland processes (untrusted_app / shell) have access to
+   the necessary futex commands without triggering runtime avc denials or DEFEX heuristics.
+
+====================================================================================================
+5. STATIC PROFILE CONFIRMATION SUMMARY
+====================================================================================================
+Item                              | Target Value       | Status          | Evidence
+----------------------------------+--------------------+-----------------+--------------------------
+do_futex Stack Frame Size         | 0x210 bytes        | VERIFIED_STATIC | do_futex @ 0x103c02fc
+Stack Waiter Position             | [x29 - 0xc8]       | VERIFIED_STATIC | do_futex @ 0x103c0a64
+rt_mutex_waiter::task             | 0x30               | VERIFIED_STATIC | __rt_mutex_start_proxy_lock @ 0x10375d94
+rt_mutex_waiter::lock             | 0x38               | VERIFIED_STATIC | remove_waiter @ 0x10376440
+task_struct::pi_lock              | 0x8dc              | VERIFIED_STATIC | remove_waiter @ 0x10376454
+task_struct::pi_blocked_on        | 0x900              | VERIFIED_STATIC | remove_waiter @ 0x10376498
+
+====================================================================================================
+6. MINIMUM REMAINING EVIDENCE NEEDED
+====================================================================================================
+Before any device-specific security research or exploitability can be definitively evaluated:
+1. Physical Device Telemetry:
+   Measurement of physical thread creation/destruction latency and per-CPU cached_stacks behavior
+   on the Snapdragon 695 SoC under Android userspace scheduling.
+2. vendor_boot / dtb partition extraction (if QEMU hardware emulation is pursued):
+   Acquiring SM6375 device tree to construct an accurate emulation harness.

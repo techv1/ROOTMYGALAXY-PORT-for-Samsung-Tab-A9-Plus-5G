@@ -1,0 +1,16 @@
+ffffffc0113628c0 <__arm64_compat_sys_setsockopt>:
+ffffffc0113628c0:	f800865e 	str	x30, [x18], #8
+ffffffc0113628c4:	a9bf7bfd 	stp	x29, x30, [sp, #-16]!
+ffffffc0113628c8:	910003fd 	mov	x29, sp
+ffffffc0113628cc:	b9400008 	ldr	w8, [x0]
+ffffffc0113628d0:	b9400801 	ldr	w1, [x0, #8]
+ffffffc0113628d4:	b9401002 	ldr	w2, [x0, #16]
+ffffffc0113628d8:	f9400c03 	ldr	x3, [x0, #24]
+ffffffc0113628dc:	b9402004 	ldr	w4, [x0, #32]
+ffffffc0113628e0:	2a0803e0 	mov	w0, w8
+ffffffc0113628e4:	94000c03 	bl	ffffffc0113658f0 <__compat_sys_setsockopt>
+ffffffc0113628e8:	93407c00 	sxtw	x0, w0
+ffffffc0113628ec:	a8c17bfd 	ldp	x29, x30, [sp], #16
+ffffffc0113628f0:	f85f8e5e 	ldr	x30, [x18, #-8]!
+ffffffc0113628f4:	d65f03c0 	ret
+

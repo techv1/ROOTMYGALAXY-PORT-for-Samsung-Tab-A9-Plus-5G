@@ -1,0 +1,65 @@
+=== SM-X216B GHOSTLOCK PORTING REQUIREMENTS AUDIT ===
+Target: Samsung Galaxy Tab A9+ 5G (SM-X216B / gta9p)
+Firmware: X216BXXS9DYJ7
+Kernel: 5.4.249-qgki-31053672-abX216BXXS9DYJ7 (AArch64 / Qualcomm SM6375)
+
+====================================================================================================
+1. STATIC KERNEL PROFILE PARAMETERS
+====================================================================================================
+[VERIFIED] Device Model                 : SM-X216B (Galaxy Tab A9+ 5G)
+[VERIFIED] Build Fingerprint / Version  : 5.4.249-qgki-31053672-abX216BXXS9DYJ7
+[VERIFIED] Kernel Build Date            : Wed Oct 15 23:51:00 KST 2025
+[VERIFIED] Compiler Toolchain           : Clang 11.0.2 (r383902b1) / LLD 11.0.2
+[VERIFIED] Target Architecture          : AArch64 (ARM64 Little-Endian)
+[VERIFIED] Kernel Virtual Base Address  : 0xffffffc010080000
+[VERIFIED] Kernel Text Offset           : 0x80000
+[VERIFIED] Boot Image SHA256            : 1efd38be0575f4f74d65af82f779f808e815bf28e7b6fc65199f6f17c01b3dda
+[VERIFIED] vmlinux.elf SHA256           : dfc0912ee00696bed45f0852d490a75d20d336a16fc87288b155d513bbcea29f
+[VERIFIED] KASLR Configuration          : CONFIG_RANDOMIZE_BASE=y
+[VERIFIED] Symbol: remove_waiter        : 0xffffffc010376418
+[VERIFIED] Symbol: task_blocks_on_rt_...: 0xffffffc01037606c
+[VERIFIED] Symbol: rt_mutex_adjust_pr...: 0xffffffc0103753bc
+[VERIFIED] Symbol: rt_mutex_start_pro...: 0xffffffc010376380
+[VERIFIED] Symbol: rt_mutex_cleanup_p...: 0xffffffc010376728
+[VERIFIED] Symbol: do_futex             : 0xffffffc0103c02dc
+[VERIFIED] Symbol: futex_requeue        : 0xffffffc0103c162c
+[VERIFIED] Inlined: futex_wait_requeue  : 0xffffffc0103c0a60 (inlined into do_futex)
+[VERIFIED] task_struct::pi_lock         : 0x8dc (raw_spinlock_t, 4 bytes)
+[VERIFIED] task_struct::pi_waiters      : 0x8e8 (rb_root_cached, 16 bytes)
+[VERIFIED] task_struct::pi_blocked_on   : 0x900 (struct rt_mutex_waiter *, 8 bytes)
+[VERIFIED] rt_mutex::wait_lock          : 0x00  (raw_spinlock_t, 8 bytes)
+[VERIFIED] rt_mutex::waiters            : 0x08  (rb_root_cached, 16 bytes)
+[VERIFIED] rt_mutex::owner              : 0x18  (struct task_struct *, 8 bytes)
+[VERIFIED] rt_mutex_waiter::tree_entry  : 0x00  (struct rb_node, 24 bytes)
+[VERIFIED] rt_mutex_waiter::pi_tree_entry: 0x18 (struct rb_node, 24 bytes)
+[VERIFIED] rt_mutex_waiter::task        : 0x30  (struct task_struct *, 8 bytes)
+[VERIFIED] rt_mutex_waiter::lock        : 0x38  (struct rt_mutex *, 8 bytes)
+[VERIFIED] rt_mutex_waiter::prio        : 0x40  (int, 4 bytes)
+[VERIFIED] rt_mutex_waiter::deadlocked  : 0x44  (unsigned short, 2 bytes)
+[VERIFIED] do_futex Stack Frame Size    : 0x210 bytes (sub sp, sp, #0x1b0)
+[VERIFIED] Stack Waiter Placement       : [x29 - 0xc8]
+
+====================================================================================================
+2. RUNTIME & DYNAMIC ENVIRONMENT PARAMETERS
+====================================================================================================
+[NEEDS VERIFICATION] Thread Kernel Stack Recycling Window:
+  - Behavior: Timing between waiting thread syscall return / thread termination and physical stack page reuse.
+  - Required for: Determining the reliability window of the dangling waiter pointer.
+
+[NEEDS VERIFICATION] Stack Frame Overlap / Reuse Footprint:
+  - Behavior: Exact stack depth of the subsequent syscall or worker thread that re-occupies the stack frame.
+  - Required for: Establishing which kernel structures can reliably overlap the waiter at [x29 - 0xc8].
+
+[NEEDS VERIFICATION] System Crash / Panic Behavior:
+  - Configuration: CONFIG_PANIC_ON_OOPS=y, CONFIG_PANIC_TIMEOUT=5.
+  - Impact: Any failed dereference immediately triggers a hard kernel panic / reboot within 5 seconds.
+
+====================================================================================================
+3. SAMSUNG PLATFORM & SECURITY MECHANISMS
+====================================================================================================
+[VERIFIED] Samsung DEFEX                : PRESENT (CONFIG_SECURITY_DEFEX=y; policy-based, does not hook rtmutex)
+[VERIFIED] SELinux Enforcing            : PRESENT (CONFIG_SECURITY_SELINUX=y, default enforcing in user build)
+[VERIFIED] Knox RKP / TIMA / KDP        : ABSENT in kernel config (# CONFIG_RKP / TIMA / KDP not set; standard QGKI UH model)
+[VERIFIED] userfaultfd Support          : ABSENT (# CONFIG_USERFAULTFD is not set; cannot use uffd for heap stall)
+[VERIFIED] Kernel Module Loading        : RESTRICTED (CONFIG_MODULES=y, but unsigned modules blocked / locked down)
+[NOT APPLICABLE] 32-bit Compat Proxy PI : NOT APPLICABLE (64-bit AArch64 native execution environment)

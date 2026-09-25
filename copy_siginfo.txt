@@ -1,0 +1,86 @@
+
+vmlinux.elf:     file format elf64-littleaarch64
+
+
+Disassembly of section .kernel:
+
+ffffffc01030d1e4 <copy_siginfo_from_user>:
+ffffffc01030d1e4:	d10203ff 	sub	sp, sp, #0x80
+ffffffc01030d1e8:	f800865e 	str	x30, [x18], #8
+ffffffc01030d1ec:	a9067bfd 	stp	x29, x30, [sp, #96]
+ffffffc01030d1f0:	a9074ff4 	stp	x20, x19, [sp, #112]
+ffffffc01030d1f4:	910183fd 	add	x29, sp, #0x60
+ffffffc01030d1f8:	b0010668 	adrp	x8, ffffffc0123da000 <ncm_fops+0x48>
+ffffffc01030d1fc:	f9440908 	ldr	x8, [x8, #2064]
+ffffffc01030d200:	52800602 	mov	w2, #0x30                  	// #48
+ffffffc01030d204:	aa0103f3 	mov	x19, x1
+ffffffc01030d208:	aa0003f4 	mov	x20, x0
+ffffffc01030d20c:	f81f83a8 	stur	x8, [x29, #-8]
+ffffffc01030d210:	97f60eee 	bl	ffffffc010090dc8 <_copy_from_user>
+ffffffc01030d214:	b4000060 	cbz	x0, ffffffc01030d220 <copy_siginfo_from_user+0x3c>
+ffffffc01030d218:	128001a0 	mov	w0, #0xfffffff2            	// #-14
+ffffffc01030d21c:	14000005 	b	ffffffc01030d230 <copy_siginfo_from_user+0x4c>
+ffffffc01030d220:	b9400a88 	ldr	w8, [x20, #8]
+ffffffc01030d224:	7102011f 	cmp	w8, #0x80
+ffffffc01030d228:	54000181 	b.ne	ffffffc01030d258 <copy_siginfo_from_user+0x74>  // b.any
+ffffffc01030d22c:	2a1f03e0 	mov	w0, wzr
+ffffffc01030d230:	b0010669 	adrp	x9, ffffffc0123da000 <ncm_fops+0x48>
+ffffffc01030d234:	f85f83a8 	ldur	x8, [x29, #-8]
+ffffffc01030d238:	f9440929 	ldr	x9, [x9, #2064]
+ffffffc01030d23c:	eb08013f 	cmp	x9, x8
+ffffffc01030d240:	540006a1 	b.ne	ffffffc01030d314 <copy_siginfo_from_user+0x130>  // b.any
+ffffffc01030d244:	a9467bfd 	ldp	x29, x30, [sp, #96]
+ffffffc01030d248:	a9474ff4 	ldp	x20, x19, [sp, #112]
+ffffffc01030d24c:	f85f8e5e 	ldr	x30, [x18, #-8]!
+ffffffc01030d250:	910203ff 	add	sp, sp, #0x80
+ffffffc01030d254:	d65f03c0 	ret
+ffffffc01030d258:	7100051f 	cmp	w8, #0x1
+ffffffc01030d25c:	540002ab 	b.lt	ffffffc01030d2b0 <copy_siginfo_from_user+0xcc>  // b.tstop
+ffffffc01030d260:	b9400289 	ldr	w9, [x20]
+ffffffc01030d264:	5100052a 	sub	w10, w9, #0x1
+ffffffc01030d268:	7100795f 	cmp	w10, #0x1e
+ffffffc01030d26c:	540001c8 	b.hi	ffffffc01030d2a4 <copy_siginfo_from_user+0xc0>  // b.pmore
+ffffffc01030d270:	5280002b 	mov	w11, #0x1                   	// #1
+ffffffc01030d274:	9aca216a 	lsl	x10, x11, x10
+ffffffc01030d278:	52809b0b 	mov	w11, #0x4d8                 	// #1240
+ffffffc01030d27c:	72aa002b 	movk	w11, #0x5001, lsl #16
+ffffffc01030d280:	ea0b015f 	tst	x10, x11
+ffffffc01030d284:	54000100 	b.eq	ffffffc01030d2a4 <copy_siginfo_from_user+0xc0>  // b.none
+ffffffc01030d288:	f000f6aa 	adrp	x10, ffffffc0121e4000 <fault_info+0x7e8>
+ffffffc01030d28c:	d37ff929 	lsl	x9, x9, #1
+ffffffc01030d290:	911ed94a 	add	x10, x10, #0x7b6
+ffffffc01030d294:	38696949 	ldrb	w9, [x10, x9]
+ffffffc01030d298:	6b09011f 	cmp	w8, w9
+ffffffc01030d29c:	54fffc8d 	b.le	ffffffc01030d22c <copy_siginfo_from_user+0x48>
+ffffffc01030d2a0:	14000009 	b	ffffffc01030d2c4 <copy_siginfo_from_user+0xe0>
+ffffffc01030d2a4:	71001d1f 	cmp	w8, #0x7
+ffffffc01030d2a8:	54fffc2b 	b.lt	ffffffc01030d22c <copy_siginfo_from_user+0x48>  // b.tstop
+ffffffc01030d2ac:	14000006 	b	ffffffc01030d2c4 <copy_siginfo_from_user+0xe0>
+ffffffc01030d2b0:	3100211f 	cmn	w8, #0x8
+ffffffc01030d2b4:	2a1f03e0 	mov	w0, wzr
+ffffffc01030d2b8:	54fffbcc 	b.gt	ffffffc01030d230 <copy_siginfo_from_user+0x4c>
+ffffffc01030d2bc:	3100f11f 	cmn	w8, #0x3c
+ffffffc01030d2c0:	54fffb80 	b.eq	ffffffc01030d230 <copy_siginfo_from_user+0x4c>  // b.none
+ffffffc01030d2c4:	9100c261 	add	x1, x19, #0x30
+ffffffc01030d2c8:	910023e0 	add	x0, sp, #0x8
+ffffffc01030d2cc:	52800a02 	mov	w2, #0x50                  	// #80
+ffffffc01030d2d0:	a904ffff 	stp	xzr, xzr, [sp, #72]
+ffffffc01030d2d4:	a903ffff 	stp	xzr, xzr, [sp, #56]
+ffffffc01030d2d8:	a902ffff 	stp	xzr, xzr, [sp, #40]
+ffffffc01030d2dc:	a901ffff 	stp	xzr, xzr, [sp, #24]
+ffffffc01030d2e0:	a900ffff 	stp	xzr, xzr, [sp, #8]
+ffffffc01030d2e4:	910023f3 	add	x19, sp, #0x8
+ffffffc01030d2e8:	97f60eb8 	bl	ffffffc010090dc8 <_copy_from_user>
+ffffffc01030d2ec:	b5fff960 	cbnz	x0, ffffffc01030d218 <copy_siginfo_from_user+0x34>
+ffffffc01030d2f0:	aa1f03e8 	mov	x8, xzr
+ffffffc01030d2f4:	38686a69 	ldrb	w9, [x19, x8]
+ffffffc01030d2f8:	350000a9 	cbnz	w9, ffffffc01030d30c <copy_siginfo_from_user+0x128>
+ffffffc01030d2fc:	91000508 	add	x8, x8, #0x1
+ffffffc01030d300:	f101411f 	cmp	x8, #0x50
+ffffffc01030d304:	54ffff81 	b.ne	ffffffc01030d2f4 <copy_siginfo_from_user+0x110>  // b.any
+ffffffc01030d308:	17ffffc9 	b	ffffffc01030d22c <copy_siginfo_from_user+0x48>
+ffffffc01030d30c:	128000c0 	mov	w0, #0xfffffff9            	// #-7
+ffffffc01030d310:	17ffffc8 	b	ffffffc01030d230 <copy_siginfo_from_user+0x4c>
+ffffffc01030d314:	97ff9f3f 	bl	ffffffc0102f5010 <__stack_chk_fail>
+
+Disassembly of section .kernel2:

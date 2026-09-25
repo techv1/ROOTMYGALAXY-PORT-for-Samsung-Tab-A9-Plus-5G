@@ -1,0 +1,15 @@
+=== VERIFIED SYMBOL REPORT (Ghidra Headless) ===
+Program: vmlinux.elf
+Image Base: 0xffffffc010080000
+remove_waiter                    -> 0xffffffc010376418 (Namespace: Global)
+task_blocks_on_rt_mutex          -> 0xffffffc01037606c (Namespace: Global)
+rt_mutex_adjust_prio_chain       -> 0xffffffc0103753bc (Namespace: Global)
+rt_mutex_start_proxy_lock        -> 0xffffffc010376380 (Namespace: Global)
+__rt_mutex_start_proxy_lock      -> 0xffffffc010375df8 (Namespace: Global)
+rt_mutex_cleanup_proxy_lock      -> 0xffffffc010376728 (Namespace: Global)
+futex_lock_pi                    -> 0xffffffc0103c2638 (Namespace: Global)
+futex_unlock_pi                  -> 0xffffffc0103c2e38 (Namespace: Global)
+futex_wait_requeue_pi            -> NOT FOUND IN GHIDRA SYMBOL TABLE
+futex_requeue                    -> 0xffffffc0103c162c (Namespace: Global)
+futex_proxy_trylock_atomic       -> 0xffffffc0103c5530 (Namespace: Global)
+rt_mutex_slowlock                -> NOT FOUND IN GHIDRA SYMBOL TABLE

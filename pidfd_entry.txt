@@ -1,0 +1,157 @@
+
+vmlinux.elf:     file format elf64-littleaarch64
+
+
+Disassembly of section .kernel:
+
+ffffffc01030ddd0 <__arm64_sys_pidfd_send_signal>:
+ffffffc01030ddd0:	d10403ff 	sub	sp, sp, #0x100
+ffffffc01030ddd4:	f800865e 	str	x30, [x18], #8
+ffffffc01030ddd8:	a90c7bfd 	stp	x29, x30, [sp, #192]
+ffffffc01030dddc:	a90d5ff8 	stp	x24, x23, [sp, #208]
+ffffffc01030dde0:	a90e57f6 	stp	x22, x21, [sp, #224]
+ffffffc01030dde4:	a90f4ff4 	stp	x20, x19, [sp, #240]
+ffffffc01030dde8:	910303fd 	add	x29, sp, #0xc0
+ffffffc01030ddec:	b0010669 	adrp	x9, ffffffc0123da000 <ncm_fops+0x48>
+ffffffc01030ddf0:	f9440929 	ldr	x9, [x9, #2064]
+ffffffc01030ddf4:	aa0003e8 	mov	x8, x0
+ffffffc01030ddf8:	f81f83a9 	stur	x9, [x29, #-8]
+ffffffc01030ddfc:	f9400000 	ldr	x0, [x0]
+ffffffc01030de00:	b9400915 	ldr	w21, [x8, #8]
+ffffffc01030de04:	f9400918 	ldr	x24, [x8, #16]
+ffffffc01030de08:	b9401908 	ldr	w8, [x8, #24]
+ffffffc01030de0c:	a902ffff 	stp	xzr, xzr, [sp, #40]
+ffffffc01030de10:	a901ffff 	stp	xzr, xzr, [sp, #24]
+ffffffc01030de14:	a900ffff 	stp	xzr, xzr, [sp, #8]
+ffffffc01030de18:	34000068 	cbz	w8, ffffffc01030de24 <__arm64_sys_pidfd_send_signal+0x54>
+ffffffc01030de1c:	928002a0 	mov	x0, #0xffffffffffffffea    	// #-22
+ffffffc01030de20:	14000073 	b	ffffffc01030dfec <__arm64_sys_pidfd_send_signal+0x21c>
+ffffffc01030de24:	9408ee13 	bl	ffffffc010549670 <__fdget>
+ffffffc01030de28:	f27ef413 	ands	x19, x0, #0xfffffffffffffffc
+ffffffc01030de2c:	540001e0 	b.eq	ffffffc01030de68 <__arm64_sys_pidfd_send_signal+0x98>  // b.none
+ffffffc01030de30:	aa0003f4 	mov	x20, x0
+ffffffc01030de34:	aa1303e0 	mov	x0, x19
+ffffffc01030de38:	97ff8d5b 	bl	ffffffc0102f13a4 <pidfd_pid>
+ffffffc01030de3c:	aa0003f6 	mov	x22, x0
+ffffffc01030de40:	b13ffc1f 	cmn	x0, #0xfff
+ffffffc01030de44:	54000083 	b.cc	ffffffc01030de54 <__arm64_sys_pidfd_send_signal+0x84>  // b.lo, b.ul, b.last
+ffffffc01030de48:	aa1303e0 	mov	x0, x19
+ffffffc01030de4c:	940accc7 	bl	ffffffc0105c1168 <tgid_pidfd_to_pid>
+ffffffc01030de50:	aa0003f6 	mov	x22, x0
+ffffffc01030de54:	b13ffedf 	cmn	x22, #0xfff
+ffffffc01030de58:	540000c3 	b.cc	ffffffc01030de70 <__arm64_sys_pidfd_send_signal+0xa0>  // b.lo, b.ul, b.last
+ffffffc01030de5c:	2a1603f8 	mov	w24, w22
+ffffffc01030de60:	37000c14 	tbnz	w20, #0, ffffffc01030dfe0 <__arm64_sys_pidfd_send_signal+0x210>
+ffffffc01030de64:	14000061 	b	ffffffc01030dfe8 <__arm64_sys_pidfd_send_signal+0x218>
+ffffffc01030de68:	92800100 	mov	x0, #0xfffffffffffffff7    	// #-9
+ffffffc01030de6c:	14000060 	b	ffffffc01030dfec <__arm64_sys_pidfd_send_signal+0x21c>
+ffffffc01030de70:	d5384117 	mrs	x23, sp_el0
+ffffffc01030de74:	aa1703e0 	mov	x0, x23
+ffffffc01030de78:	94004972 	bl	ffffffc010320440 <task_active_pid_ns>
+ffffffc01030de7c:	b4000136 	cbz	x22, ffffffc01030dea0 <__arm64_sys_pidfd_send_signal+0xd0>
+ffffffc01030de80:	b94006c8 	ldr	w8, [x22, #4]
+ffffffc01030de84:	8b0812c8 	add	x8, x22, x8, lsl #4
+ffffffc01030de88:	f9402d08 	ldr	x8, [x8, #88]
+ffffffc01030de8c:	b40000a8 	cbz	x8, ffffffc01030dea0 <__arm64_sys_pidfd_send_signal+0xd0>
+ffffffc01030de90:	eb00011f 	cmp	x8, x0
+ffffffc01030de94:	540000c0 	b.eq	ffffffc01030deac <__arm64_sys_pidfd_send_signal+0xdc>  // b.none
+ffffffc01030de98:	f9402908 	ldr	x8, [x8, #80]
+ffffffc01030de9c:	b5ffffa8 	cbnz	x8, ffffffc01030de90 <__arm64_sys_pidfd_send_signal+0xc0>
+ffffffc01030dea0:	128002b8 	mov	w24, #0xffffffea            	// #-22
+ffffffc01030dea4:	370009f4 	tbnz	w20, #0, ffffffc01030dfe0 <__arm64_sys_pidfd_send_signal+0x210>
+ffffffc01030dea8:	14000050 	b	ffffffc01030dfe8 <__arm64_sys_pidfd_send_signal+0x218>
+ffffffc01030deac:	b4000118 	cbz	x24, ffffffc01030decc <__arm64_sys_pidfd_send_signal+0xfc>
+ffffffc01030deb0:	f94002e8 	ldr	x8, [x23]
+ffffffc01030deb4:	37b00328 	tbnz	w8, #22, ffffffc01030df18 <__arm64_sys_pidfd_send_signal+0x148>
+ffffffc01030deb8:	910023e0 	add	x0, sp, #0x8
+ffffffc01030debc:	aa1803e1 	mov	x1, x24
+ffffffc01030dec0:	97fffcc9 	bl	ffffffc01030d1e4 <copy_siginfo_from_user>
+ffffffc01030dec4:	2a0003f8 	mov	w24, w0
+ffffffc01030dec8:	14000027 	b	ffffffc01030df64 <__arm64_sys_pidfd_send_signal+0x194>
+ffffffc01030decc:	910023e0 	add	x0, sp, #0x8
+ffffffc01030ded0:	52800602 	mov	w2, #0x30                  	// #48
+ffffffc01030ded4:	2a1f03e1 	mov	w1, wzr
+ffffffc01030ded8:	97f5fb2a 	bl	ffffffc01008cb80 <__memset>
+ffffffc01030dedc:	52800021 	mov	w1, #0x1                   	// #1
+ffffffc01030dee0:	aa1703e0 	mov	x0, x23
+ffffffc01030dee4:	aa1f03e2 	mov	x2, xzr
+ffffffc01030dee8:	b9000bf5 	str	w21, [sp, #8]
+ffffffc01030deec:	f800c3ff 	stur	xzr, [sp, #12]
+ffffffc01030def0:	94004acf 	bl	ffffffc010320a2c <__task_pid_nr_ns>
+ffffffc01030def4:	b9001be0 	str	w0, [sp, #24]
+ffffffc01030def8:	f94406e8 	ldr	x8, [x23, #2056]
+ffffffc01030defc:	d00136e9 	adrp	x9, ffffffc0129eb000 <fs_table+0x60>
+ffffffc01030df00:	b94c4129 	ldr	w9, [x9, #3136]
+ffffffc01030df04:	b9400508 	ldr	w8, [x8, #4]
+ffffffc01030df08:	3100051f 	cmn	w8, #0x1
+ffffffc01030df0c:	1a880128 	csel	w8, w9, w8, eq	// eq = none
+ffffffc01030df10:	b9001fe8 	str	w8, [sp, #28]
+ffffffc01030df14:	14000020 	b	ffffffc01030df94 <__arm64_sys_pidfd_send_signal+0x1c4>
+ffffffc01030df18:	9100e3e0 	add	x0, sp, #0x38
+ffffffc01030df1c:	52801002 	mov	w2, #0x80                  	// #128
+ffffffc01030df20:	aa1803e1 	mov	x1, x24
+ffffffc01030df24:	a90affff 	stp	xzr, xzr, [sp, #168]
+ffffffc01030df28:	a909ffff 	stp	xzr, xzr, [sp, #152]
+ffffffc01030df2c:	a908ffff 	stp	xzr, xzr, [sp, #136]
+ffffffc01030df30:	a907ffff 	stp	xzr, xzr, [sp, #120]
+ffffffc01030df34:	a906ffff 	stp	xzr, xzr, [sp, #104]
+ffffffc01030df38:	a905ffff 	stp	xzr, xzr, [sp, #88]
+ffffffc01030df3c:	a904ffff 	stp	xzr, xzr, [sp, #72]
+ffffffc01030df40:	a903ffff 	stp	xzr, xzr, [sp, #56]
+ffffffc01030df44:	97f60ba1 	bl	ffffffc010090dc8 <_copy_from_user>
+ffffffc01030df48:	b4000060 	cbz	x0, ffffffc01030df54 <__arm64_sys_pidfd_send_signal+0x184>
+ffffffc01030df4c:	128001b8 	mov	w24, #0xfffffff2            	// #-14
+ffffffc01030df50:	14000005 	b	ffffffc01030df64 <__arm64_sys_pidfd_send_signal+0x194>
+ffffffc01030df54:	910023e0 	add	x0, sp, #0x8
+ffffffc01030df58:	9100e3e1 	add	x1, sp, #0x38
+ffffffc01030df5c:	97fffd9e 	bl	ffffffc01030d5d4 <post_copy_siginfo_from_user32>
+ffffffc01030df60:	2a1f03f8 	mov	w24, wzr
+ffffffc01030df64:	350003d8 	cbnz	w24, ffffffc01030dfdc <__arm64_sys_pidfd_send_signal+0x20c>
+ffffffc01030df68:	b9400be8 	ldr	w8, [sp, #8]
+ffffffc01030df6c:	6b15011f 	cmp	w8, w21
+ffffffc01030df70:	54fff981 	b.ne	ffffffc01030dea0 <__arm64_sys_pidfd_send_signal+0xd0>  // b.any
+ffffffc01030df74:	f9435ee8 	ldr	x8, [x23, #1720]
+ffffffc01030df78:	eb16011f 	cmp	x8, x22
+ffffffc01030df7c:	540000c0 	b.eq	ffffffc01030df94 <__arm64_sys_pidfd_send_signal+0x1c4>  // b.none
+ffffffc01030df80:	b94013e8 	ldr	w8, [sp, #16]
+ffffffc01030df84:	12800018 	mov	w24, #0xffffffff            	// #-1
+ffffffc01030df88:	36f802a8 	tbz	w8, #31, ffffffc01030dfdc <__arm64_sys_pidfd_send_signal+0x20c>
+ffffffc01030df8c:	3100191f 	cmn	w8, #0x6
+ffffffc01030df90:	54000260 	b.eq	ffffffc01030dfdc <__arm64_sys_pidfd_send_signal+0x20c>  // b.none
+ffffffc01030df94:	9402308d 	bl	ffffffc01039a1c8 <__rcu_read_lock>
+ffffffc01030df98:	aa1603e0 	mov	x0, x22
+ffffffc01030df9c:	2a1f03e1 	mov	w1, wzr
+ffffffc01030dfa0:	940049b4 	bl	ffffffc010320670 <pid_task>
+ffffffc01030dfa4:	aa0003f7 	mov	x23, x0
+ffffffc01030dfa8:	b4000100 	cbz	x0, ffffffc01030dfc8 <__arm64_sys_pidfd_send_signal+0x1f8>
+ffffffc01030dfac:	910023e1 	add	x1, sp, #0x8
+ffffffc01030dfb0:	52800023 	mov	w3, #0x1                   	// #1
+ffffffc01030dfb4:	2a1503e0 	mov	w0, w21
+ffffffc01030dfb8:	aa1703e2 	mov	x2, x23
+ffffffc01030dfbc:	97ffede2 	bl	ffffffc010309744 <group_send_sig_info>
+ffffffc01030dfc0:	2a0003f8 	mov	w24, w0
+ffffffc01030dfc4:	14000002 	b	ffffffc01030dfcc <__arm64_sys_pidfd_send_signal+0x1fc>
+ffffffc01030dfc8:	12800058 	mov	w24, #0xfffffffd            	// #-3
+ffffffc01030dfcc:	94023084 	bl	ffffffc01039a1dc <__rcu_read_unlock>
+ffffffc01030dfd0:	31000f1f 	cmn	w24, #0x3
+ffffffc01030dfd4:	54000041 	b.ne	ffffffc01030dfdc <__arm64_sys_pidfd_send_signal+0x20c>  // b.any
+ffffffc01030dfd8:	b5fffdf7 	cbnz	x23, ffffffc01030df94 <__arm64_sys_pidfd_send_signal+0x1c4>
+ffffffc01030dfdc:	36000074 	tbz	w20, #0, ffffffc01030dfe8 <__arm64_sys_pidfd_send_signal+0x218>
+ffffffc01030dfe0:	aa1303e0 	mov	x0, x19
+ffffffc01030dfe4:	940850e3 	bl	ffffffc010522370 <fput>
+ffffffc01030dfe8:	93407f00 	sxtw	x0, w24
+ffffffc01030dfec:	b0010669 	adrp	x9, ffffffc0123da000 <ncm_fops+0x48>
+ffffffc01030dff0:	f85f83a8 	ldur	x8, [x29, #-8]
+ffffffc01030dff4:	f9440929 	ldr	x9, [x9, #2064]
+ffffffc01030dff8:	eb08013f 	cmp	x9, x8
+ffffffc01030dffc:	54000101 	b.ne	ffffffc01030e01c <__arm64_sys_pidfd_send_signal+0x24c>  // b.any
+ffffffc01030e000:	a94c7bfd 	ldp	x29, x30, [sp, #192]
+ffffffc01030e004:	a94f4ff4 	ldp	x20, x19, [sp, #240]
+ffffffc01030e008:	a94e57f6 	ldp	x22, x21, [sp, #224]
+ffffffc01030e00c:	a94d5ff8 	ldp	x24, x23, [sp, #208]
+ffffffc01030e010:	f85f8e5e 	ldr	x30, [x18, #-8]!
+ffffffc01030e014:	910403ff 	add	sp, sp, #0x100
+ffffffc01030e018:	d65f03c0 	ret
+ffffffc01030e01c:	97ff9bfd 	bl	ffffffc0102f5010 <__stack_chk_fail>
+
+Disassembly of section .kernel2:

@@ -1,0 +1,20 @@
+
+vmlinux.elf:     file format elf64-littleaarch64
+
+
+Disassembly of section .kernel:
+
+ffffffc010314150 <__arm64_sys_prctl>:
+ffffffc010314150:	f800865e 	str	x30, [x18], #8
+ffffffc010314154:	a9bf7bfd 	stp	x29, x30, [sp, #-16]!
+ffffffc010314158:	910003fd 	mov	x29, sp
+ffffffc01031415c:	b9400008 	ldr	w8, [x0]
+ffffffc010314160:	a9408801 	ldp	x1, x2, [x0, #8]
+ffffffc010314164:	a9419003 	ldp	x3, x4, [x0, #24]
+ffffffc010314168:	2a0803e0 	mov	w0, w8
+ffffffc01031416c:	9400022c 	bl	ffffffc010314a1c <__do_sys_prctl>
+ffffffc010314170:	a8c17bfd 	ldp	x29, x30, [sp], #16
+ffffffc010314174:	f85f8e5e 	ldr	x30, [x18, #-8]!
+ffffffc010314178:	d65f03c0 	ret
+
+Disassembly of section .kernel2:

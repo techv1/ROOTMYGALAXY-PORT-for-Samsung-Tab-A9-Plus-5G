@@ -1,0 +1,100 @@
+
+vmlinux.elf:     file format elf64-littleaarch64
+
+
+Disassembly of section .kernel:
+
+ffffffc0103c3498 <__arm64_sys_futex>:
+ffffffc0103c3498:	d101c3ff 	sub	sp, sp, #0x70
+ffffffc0103c349c:	f800865e 	str	x30, [x18], #8
+ffffffc0103c34a0:	a9027bfd 	stp	x29, x30, [sp, #32]
+ffffffc0103c34a4:	f9001bf9 	str	x25, [sp, #48]
+ffffffc0103c34a8:	a9045ff8 	stp	x24, x23, [sp, #64]
+ffffffc0103c34ac:	a90557f6 	stp	x22, x21, [sp, #80]
+ffffffc0103c34b0:	a9064ff4 	stp	x20, x19, [sp, #96]
+ffffffc0103c34b4:	910083fd 	add	x29, sp, #0x20
+ffffffc0103c34b8:	f00100a8 	adrp	x8, ffffffc0123da000 <ncm_fops+0x48>
+ffffffc0103c34bc:	f9440908 	ldr	x8, [x8, #2064]
+ffffffc0103c34c0:	f81f83a8 	stur	x8, [x29, #-8]
+ffffffc0103c34c4:	b9400814 	ldr	w20, [x0, #8]
+ffffffc0103c34c8:	f9400013 	ldr	x19, [x0]
+ffffffc0103c34cc:	b9401015 	ldr	w21, [x0, #16]
+ffffffc0103c34d0:	a941dc18 	ldp	x24, x23, [x0, #24]
+ffffffc0103c34d4:	b9402816 	ldr	w22, [x0, #40]
+ffffffc0103c34d8:	12177699 	and	w25, w20, #0xfffffe7f
+ffffffc0103c34dc:	a900ffff 	stp	xzr, xzr, [sp, #8]
+ffffffc0103c34e0:	f90003ff 	str	xzr, [sp]
+ffffffc0103c34e4:	b40001f8 	cbz	x24, ffffffc0103c3520 <__arm64_sys_futex+0x88>
+ffffffc0103c34e8:	71002f3f 	cmp	w25, #0xb
+ffffffc0103c34ec:	aa1f03e3 	mov	x3, xzr
+ffffffc0103c34f0:	540001a8 	b.hi	ffffffc0103c3524 <__arm64_sys_futex+0x8c>  // b.pmore
+ffffffc0103c34f4:	52800028 	mov	w8, #0x1                   	// #1
+ffffffc0103c34f8:	1ad92108 	lsl	w8, w8, w25
+ffffffc0103c34fc:	52814829 	mov	w9, #0xa41                 	// #2625
+ffffffc0103c3500:	6a09011f 	tst	w8, w9
+ffffffc0103c3504:	54000100 	b.eq	ffffffc0103c3524 <__arm64_sys_futex+0x8c>  // b.none
+ffffffc0103c3508:	910023e0 	add	x0, sp, #0x8
+ffffffc0103c350c:	aa1803e1 	mov	x1, x24
+ffffffc0103c3510:	97ff86b4 	bl	ffffffc0103a4fe0 <get_timespec64>
+ffffffc0103c3514:	34000400 	cbz	w0, ffffffc0103c3594 <__arm64_sys_futex+0xfc>
+ffffffc0103c3518:	928001a0 	mov	x0, #0xfffffffffffffff2    	// #-14
+ffffffc0103c351c:	14000011 	b	ffffffc0103c3560 <__arm64_sys_futex+0xc8>
+ffffffc0103c3520:	aa1f03e3 	mov	x3, xzr
+ffffffc0103c3524:	7100333f 	cmp	w25, #0xc
+ffffffc0103c3528:	2a1f03e5 	mov	w5, wzr
+ffffffc0103c352c:	540000e8 	b.hi	ffffffc0103c3548 <__arm64_sys_futex+0xb0>  // b.pmore
+ffffffc0103c3530:	52800028 	mov	w8, #0x1                   	// #1
+ffffffc0103c3534:	1ad92108 	lsl	w8, w8, w25
+ffffffc0103c3538:	52820709 	mov	w9, #0x1038                	// #4152
+ffffffc0103c353c:	6a09011f 	tst	w8, w9
+ffffffc0103c3540:	54000040 	b.eq	ffffffc0103c3548 <__arm64_sys_futex+0xb0>  // b.none
+ffffffc0103c3544:	2a1803e5 	mov	w5, w24
+ffffffc0103c3548:	aa1303e0 	mov	x0, x19
+ffffffc0103c354c:	2a1403e1 	mov	w1, w20
+ffffffc0103c3550:	2a1503e2 	mov	w2, w21
+ffffffc0103c3554:	aa1703e4 	mov	x4, x23
+ffffffc0103c3558:	2a1603e6 	mov	w6, w22
+ffffffc0103c355c:	97fff360 	bl	ffffffc0103c02dc <do_futex>
+ffffffc0103c3560:	f00100a9 	adrp	x9, ffffffc0123da000 <ncm_fops+0x48>
+ffffffc0103c3564:	f85f83a8 	ldur	x8, [x29, #-8]
+ffffffc0103c3568:	f9440929 	ldr	x9, [x9, #2064]
+ffffffc0103c356c:	eb08013f 	cmp	x9, x8
+ffffffc0103c3570:	54000481 	b.ne	ffffffc0103c3600 <__arm64_sys_futex+0x168>  // b.any
+ffffffc0103c3574:	a9427bfd 	ldp	x29, x30, [sp, #32]
+ffffffc0103c3578:	a9464ff4 	ldp	x20, x19, [sp, #96]
+ffffffc0103c357c:	a94557f6 	ldp	x22, x21, [sp, #80]
+ffffffc0103c3580:	a9445ff8 	ldp	x24, x23, [sp, #64]
+ffffffc0103c3584:	f9401bf9 	ldr	x25, [sp, #48]
+ffffffc0103c3588:	f85f8e5e 	ldr	x30, [x18, #-8]!
+ffffffc0103c358c:	9101c3ff 	add	sp, sp, #0x70
+ffffffc0103c3590:	d65f03c0 	ret
+ffffffc0103c3594:	f94007e8 	ldr	x8, [sp, #8]
+ffffffc0103c3598:	b7f80228 	tbnz	x8, #63, ffffffc0103c35dc <__arm64_sys_futex+0x144>
+ffffffc0103c359c:	f9400be9 	ldr	x9, [sp, #16]
+ffffffc0103c35a0:	5299400a 	mov	w10, #0xca00                	// #51712
+ffffffc0103c35a4:	72a7734a 	movk	w10, #0x3b9a, lsl #16
+ffffffc0103c35a8:	eb0a013f 	cmp	x9, x10
+ffffffc0103c35ac:	54000182 	b.cs	ffffffc0103c35dc <__arm64_sys_futex+0x144>  // b.hs, b.nlast
+ffffffc0103c35b0:	9b0a2509 	madd	x9, x8, x10, x9
+ffffffc0103c35b4:	d28fa06a 	mov	x10, #0x7d03                	// #32003
+ffffffc0103c35b8:	f2a4b82a 	movk	x10, #0x25c1, lsl #16
+ffffffc0103c35bc:	f2c0004a 	movk	x10, #0x2, lsl #32
+ffffffc0103c35c0:	eb0a011f 	cmp	x8, x10
+ffffffc0103c35c4:	92f00008 	mov	x8, #0x7fffffffffffffff    	// #9223372036854775807
+ffffffc0103c35c8:	9a89c108 	csel	x8, x8, x9, gt
+ffffffc0103c35cc:	f90003e8 	str	x8, [sp]
+ffffffc0103c35d0:	340000b9 	cbz	w25, ffffffc0103c35e4 <__arm64_sys_futex+0x14c>
+ffffffc0103c35d4:	910003e3 	mov	x3, sp
+ffffffc0103c35d8:	17ffffd3 	b	ffffffc0103c3524 <__arm64_sys_futex+0x8c>
+ffffffc0103c35dc:	928002a0 	mov	x0, #0xffffffffffffffea    	// #-22
+ffffffc0103c35e0:	17ffffe0 	b	ffffffc0103c3560 <__arm64_sys_futex+0xc8>
+ffffffc0103c35e4:	97ffa793 	bl	ffffffc0103ad430 <ktime_get>
+ffffffc0103c35e8:	f94003e1 	ldr	x1, [sp]
+ffffffc0103c35ec:	97ff9a65 	bl	ffffffc0103a9f80 <ktime_add_safe>
+ffffffc0103c35f0:	2a1f03e5 	mov	w5, wzr
+ffffffc0103c35f4:	f90003e0 	str	x0, [sp]
+ffffffc0103c35f8:	910003e3 	mov	x3, sp
+ffffffc0103c35fc:	17ffffd3 	b	ffffffc0103c3548 <__arm64_sys_futex+0xb0>
+ffffffc0103c3600:	97fcc684 	bl	ffffffc0102f5010 <__stack_chk_fail>
+
+Disassembly of section .kernel2:

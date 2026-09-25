@@ -1,0 +1,96 @@
+=== SM-X216B FINAL STATIC RUNTIME-GAP AUDIT ===
+Target Device: Samsung Galaxy Tab A9+ 5G (SM-X216B / gta9p)
+Firmware     : X216BXXS9DYJ7
+Kernel       : 5.4.249-qgki-31053672-abX216BXXS9DYJ7 (AArch64)
+
+====================================================================================================
+1. STACK LIFECYCLE & CACHING BINARY DEEP-DIVE
+====================================================================================================
+A. Are kernel stacks cached?
+   [VERIFIED_STATIC] YES.
+   Target binary implements CONFIG_VMAP_STACK=y caching via cached_stacks (symbol at 0xffffffc012668be0).
+
+B. Are they per-CPU cached?
+   [VERIFIED_STATIC] YES.
+   In free_thread_stack (0xffffffc0102f3ea4):
+     0xffffffc0102f3f50: mrs  x9, tpidr_el1
+     0xffffffc0102f3f54: ldr  x10, [x19, #0xb08]   ; vm_struct pointer
+     0xffffffc0102f3f58: add  x9, x9, x21          ; x21 = &cached_stacks
+     0xffffffc0102f3f60: ldxr x22, [x9]
+     0xffffffc0102f3f6c: stxr w11, x10, [x9]       ; stores into per-CPU cache slot
+   In dup_task_struct (0xffffffc0102f4068):
+     0xffffffc0102f40d0: mrs  x9, tpidr_el1
+     0xffffffc0102f40d4: add  x9, x9, x26          ; x26 = &cached_stacks
+     0xffffffc0102f40dc: ldxr x25, [x9]            ; retrieves cached stack on local CPU
+     0xffffffc0102f40e0: stxr w10, x8, [x9]        ; clears cache slot
+
+C. Are cached stacks zeroed before reuse?
+   [VERIFIED_STATIC] YES.
+   CRITICAL DISCOVERY: Previous assumption that cached stacks are reused with stale data is INCORRECT.
+   Disassembly of dup_task_struct at 0xffffffc0102f414c - 0xffffffc0102f4158:
+     0xffffffc0102f414c: ldr  x0, [x25, #8]         ; x0 = stack base address
+     0xffffffc0102f4150: mov  w2, #0x4000           ; size = 0x4000 (16,384 bytes / 16 KB)
+     0xffffffc0102f4154: mov  w1, wzr               ; val = 0 (zero fill)
+     0xffffffc0102f4158: bl   #0xffffffc01008cb80   ; CALLS memset(stack, 0, 16384)!
+   Every thread stack allocated from cached_stacks (or fresh vmalloc) is explicitly wiped
+   with memset(stack, 0, 16KB) prior to thread initialization.
+   Consequently, stale waiter data CANNOT survive thread destruction across a full stack re-allocation!
+
+D. Is stack release immediate or delayed?
+   [VERIFIED_STATIC] DELAYED.
+   Stack freeing does not happen immediately on syscall exit or thread termination.
+   free_thread_stack() is invoked from put_task_stack(), which is called during delayed_free_task() /
+   release_task() after an RCU grace period (via delayed_put_task_struct at 0xffffffc0102f97d4).
+
+E. What is statically provable vs. hardware-dependent?
+   - Statically Provable [VERIFIED_STATIC]:
+     1. remove_waiter() leaves waiter->task->pi_blocked_on pointing to caller stack.
+     2. do_futex frame geometry (528 bytes) and waiter location (x29 - 0xc8).
+     3. Whole-stack memset(stack, 0, 16KB) in dup_task_struct upon new thread creation.
+     4. RCU grace period required before free_thread_stack().
+   - Hardware-Dependent [HARDWARE_REQUIRED]:
+     1. Exact timing of stack re-use during concurrent syscall execution in the same thread.
+     2. CPU scheduling/affinity jitter across Kryo cores.
+
+====================================================================================================
+2. DO_FUTEX STACK-SIZE DISCREPANCY RESOLUTION
+====================================================================================================
+[VERIFIED_STATIC]
+Disassembly of do_futex (0xffffffc0103c02dc) prologue:
+  0xffffffc0103c02dc: str x30, [x18], #8            ; Shadow call stack push
+  0xffffffc0103c02e0: stp x29, x30, [sp, #-0x60]!   ; SP -= 0x60 (96 bytes for FP, LR, callee registers)
+  0xffffffc0103c02e4: stp x28, x27, [sp, #0x10]
+  0xffffffc0103c02e8: stp x26, x25, [sp, #0x20]
+  0xffffffc0103c02ec: stp x24, x23, [sp, #0x30]
+  0xffffffc0103c02f0: stp x22, x21, [sp, #0x40]
+  0xffffffc0103c02f4: stp x20, x19, [sp, #0x50]
+  0xffffffc0103c02f8: mov x29, sp                    ; x29 (FP) = SP_entry - 0x60
+  0xffffffc0103c02fc: sub sp, sp, #0x1b0             ; SP -= 0x1b0 (432 bytes for locals)
+
+Resolution:
+- Total SP decrement: 0x60 + 0x1b0 = 0x210 bytes (528 bytes).
+- Frame Pointer (x29) is at offset +0x1b0 relative to the current bottom of stack.
+- The stack waiter is allocated at:
+  0xffffffc0103c0a64: sub x0, x29, #0xc8
+- Exact coordinate relative to current SP:
+  (SP + 0x1b0) - 0xc8 = SP + 0xe8 (232 bytes above current SP).
+- Exact coordinate relative to caller's SP (SP_entry):
+  SP_entry - 0x60 - 0xc8 = SP_entry - 0x128 (296 bytes below caller SP).
+
+====================================================================================================
+3. RE-EVALUATION OF FEASIBILITY STATEMENT
+====================================================================================================
+Evaluation:
+Because dup_task_struct() explicitly executes `memset(stack, 0, 0x4000)` on newly allocated/cached
+thread stacks, a newly spawned thread's stack CANNOT retain arbitrary pre-seeded waiter objects
+from an earlier thread lifetime.
+Instead, reclamation of the dangling waiter pointer at [SP_entry - 0x128] must be achieved via
+in-thread deep syscall call stacks (e.g. nested filesystem, binder, or netlink calls) executing
+within the SAME thread before task destruction, or by precisely overlapping a newly instantiated
+frame before another unblock path dereferences pi_blocked_on.
+
+Therefore, the claim of "runtime GhostLock feasibility" cannot be supported on static analysis alone.
+The existing evidence supports strictly:
+  "CVE + STATIC STACK-LAYOUT COMPATIBILITY"
+Full runtime exploitability requires demonstrating a legitimate in-thread syscall stack overlap
+or race window that survives RCU-delayed freeing and the explicit 16KB stack zeroing.

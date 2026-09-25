@@ -1,0 +1,82 @@
+ffffffc011472188 <compat_ipv6_setsockopt>:
+ffffffc011472188:	d10103ff 	sub	sp, sp, #0x40
+ffffffc01147218c:	f800865e 	str	x30, [x18], #8
+ffffffc011472190:	a9017bfd 	stp	x29, x30, [sp, #16]
+ffffffc011472194:	a90257f6 	stp	x22, x21, [sp, #32]
+ffffffc011472198:	a9034ff4 	stp	x20, x19, [sp, #48]
+ffffffc01147219c:	910043fd 	add	x29, sp, #0x10
+ffffffc0114721a0:	2a0403f3 	mov	w19, w4
+ffffffc0114721a4:	aa0303f4 	mov	x20, x3
+ffffffc0114721a8:	2a0203f5 	mov	w21, w2
+ffffffc0114721ac:	7100a43f 	cmp	w1, #0x29
+ffffffc0114721b0:	aa0003f6 	mov	x22, x0
+ffffffc0114721b4:	54000100 	b.eq	ffffffc0114721d4 <compat_ipv6_setsockopt+0x4c>  // b.none
+ffffffc0114721b8:	350000a1 	cbnz	w1, ffffffc0114721cc <compat_ipv6_setsockopt+0x44>
+ffffffc0114721bc:	794446c8 	ldrh	w8, [x22, #546]
+ffffffc0114721c0:	53103d08 	lsl	w8, w8, #16
+ffffffc0114721c4:	7140c11f 	cmp	w8, #0x30, lsl #12
+ffffffc0114721c8:	540001e1 	b.ne	ffffffc011472204 <compat_ipv6_setsockopt+0x7c>  // b.any
+ffffffc0114721cc:	12800b60 	mov	w0, #0xffffffa4            	// #-92
+ffffffc0114721d0:	1400002f 	b	ffffffc01147228c <compat_ipv6_setsockopt+0x104>
+ffffffc0114721d4:	5100aaa8 	sub	w8, w21, #0x2a
+ffffffc0114721d8:	7100191f 	cmp	w8, #0x6
+ffffffc0114721dc:	54000388 	b.hi	ffffffc01147224c <compat_ipv6_setsockopt+0xc4>  // b.pmore
+ffffffc0114721e0:	b0001045 	adrp	x5, ffffffc01167b000 <snd_rme_spdif_format_get$8bbc066d5dc120c60a25a9ef97dd4fef.cfi_jt>
+ffffffc0114721e4:	910610a5 	add	x5, x5, #0x184
+ffffffc0114721e8:	52800521 	mov	w1, #0x29                  	// #41
+ffffffc0114721ec:	aa1603e0 	mov	x0, x22
+ffffffc0114721f0:	2a1503e2 	mov	w2, w21
+ffffffc0114721f4:	aa1403e3 	mov	x3, x20
+ffffffc0114721f8:	2a1303e4 	mov	w4, w19
+ffffffc0114721fc:	97fbc1cc 	bl	ffffffc01136292c <compat_mc_setsockopt>
+ffffffc011472200:	14000023 	b	ffffffc01147228c <compat_ipv6_setsockopt+0x104>
+ffffffc011472204:	9000b5c8 	adrp	x8, ffffffc012b2a000 <tcp_prot+0x110>
+ffffffc011472208:	f9424508 	ldr	x8, [x8, #1160]
+ffffffc01147220c:	b5000068 	cbnz	x8, ffffffc011472218 <compat_ipv6_setsockopt+0x90>
+ffffffc011472210:	9000b5c8 	adrp	x8, ffffffc012b2a000 <tcp_prot+0x110>
+ffffffc011472214:	f9423908 	ldr	x8, [x8, #1136]
+ffffffc011472218:	b0001049 	adrp	x9, ffffffc01167b000 <snd_rme_spdif_format_get$8bbc066d5dc120c60a25a9ef97dd4fef.cfi_jt>
+ffffffc01147221c:	91061129 	add	x9, x9, #0x184
+ffffffc011472220:	cb090109 	sub	x9, x8, x9
+ffffffc011472224:	93c90929 	ror	x9, x9, #2
+ffffffc011472228:	f1003d3f 	cmp	x9, #0xf
+ffffffc01147222c:	540003c2 	b.cs	ffffffc0114722a4 <compat_ipv6_setsockopt+0x11c>  // b.hs, b.nlast
+ffffffc011472230:	aa1603e0 	mov	x0, x22
+ffffffc011472234:	2a1f03e1 	mov	w1, wzr
+ffffffc011472238:	2a1503e2 	mov	w2, w21
+ffffffc01147223c:	aa1403e3 	mov	x3, x20
+ffffffc011472240:	2a1303e4 	mov	w4, w19
+ffffffc011472244:	d63f0100 	blr	x8
+ffffffc011472248:	14000011 	b	ffffffc01147228c <compat_ipv6_setsockopt+0x104>
+ffffffc01147224c:	aa1603e0 	mov	x0, x22
+ffffffc011472250:	2a1503e1 	mov	w1, w21
+ffffffc011472254:	aa1403e2 	mov	x2, x20
+ffffffc011472258:	2a1303e3 	mov	w3, w19
+ffffffc01147225c:	97fffb95 	bl	ffffffc0114710b0 <do_ipv6_setsockopt>
+ffffffc011472260:	320002a8 	orr	w8, w21, #0x1
+ffffffc011472264:	71008d1f 	cmp	w8, #0x23
+ffffffc011472268:	54000120 	b.eq	ffffffc01147228c <compat_ipv6_setsockopt+0x104>  // b.none
+ffffffc01147226c:	3101701f 	cmn	w0, #0x5c
+ffffffc011472270:	540000e1 	b.ne	ffffffc01147228c <compat_ipv6_setsockopt+0x104>  // b.any
+ffffffc011472274:	52800141 	mov	w1, #0xa                   	// #10
+ffffffc011472278:	aa1603e0 	mov	x0, x22
+ffffffc01147227c:	2a1503e2 	mov	w2, w21
+ffffffc011472280:	aa1403e3 	mov	x3, x20
+ffffffc011472284:	2a1303e4 	mov	w4, w19
+ffffffc011472288:	9407ad17 	bl	ffffffc01165d6e4 <compat_nf_setsockopt.cfi_jt>
+ffffffc01147228c:	a9417bfd 	ldp	x29, x30, [sp, #16]
+ffffffc011472290:	a9434ff4 	ldp	x20, x19, [sp, #48]
+ffffffc011472294:	a94257f6 	ldp	x22, x21, [sp, #32]
+ffffffc011472298:	f85f8e5e 	ldr	x30, [x18, #-8]!
+ffffffc01147229c:	910103ff 	add	sp, sp, #0x40
+ffffffc0114722a0:	d65f03c0 	ret
+ffffffc0114722a4:	d2947c80 	mov	x0, #0xa3e4                	// #41956
+ffffffc0114722a8:	f2b4fc40 	movk	x0, #0xa7e2, lsl #16
+ffffffc0114722ac:	f2c1ea40 	movk	x0, #0xf52, lsl #32
+ffffffc0114722b0:	f2f6fea0 	movk	x0, #0xb7f5, lsl #48
+ffffffc0114722b4:	aa0803e1 	mov	x1, x8
+ffffffc0114722b8:	f90007e8 	str	x8, [sp, #8]
+ffffffc0114722bc:	97bfed76 	bl	ffffffc01046d894 <__cfi_slowpath>
+ffffffc0114722c0:	f94007e8 	ldr	x8, [sp, #8]
+ffffffc0114722c4:	17ffffdb 	b	ffffffc011472230 <compat_ipv6_setsockopt+0xa8>
+

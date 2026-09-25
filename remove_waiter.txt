@@ -1,0 +1,158 @@
+
+vmlinux.elf:     file format elf64-littleaarch64
+
+
+Disassembly of section .kernel:
+
+ffffffc010376418 <remove_waiter>:
+ffffffc010376418:	f800865e 	str	x30, [x18], #8
+ffffffc01037641c:	a9bc7bfd 	stp	x29, x30, [sp, #-64]!
+ffffffc010376420:	a9015ff8 	stp	x24, x23, [sp, #16]
+ffffffc010376424:	a90257f6 	stp	x22, x21, [sp, #32]
+ffffffc010376428:	a9034ff4 	stp	x20, x19, [sp, #48]
+ffffffc01037642c:	910003fd 	mov	x29, sp
+ffffffc010376430:	f9400816 	ldr	x22, [x0, #16]
+ffffffc010376434:	aa0003f3 	mov	x19, x0
+ffffffc010376438:	aa0103f7 	mov	x23, x1
+ffffffc01037643c:	b4000096 	cbz	x22, ffffffc01037644c <remove_waiter+0x34>
+ffffffc010376440:	f9401ec8 	ldr	x8, [x22, #56]
+ffffffc010376444:	eb13011f 	cmp	x8, x19
+ffffffc010376448:	540010e1 	b.ne	ffffffc010376664 <remove_waiter+0x24c>  // b.any
+ffffffc01037644c:	f9400e78 	ldr	x24, [x19, #24]
+ffffffc010376450:	d5384114 	mrs	x20, sp_el0
+ffffffc010376454:	91237295 	add	x21, x20, #0x8dc
+ffffffc010376458:	aa1503e0 	mov	x0, x21
+ffffffc01037645c:	944b5b28 	bl	ffffffc01164d0fc <_raw_spin_lock>
+ffffffc010376460:	f94002e8 	ldr	x8, [x23]
+ffffffc010376464:	eb17011f 	cmp	x8, x23
+ffffffc010376468:	54000160 	b.eq	ffffffc010376494 <remove_waiter+0x7c>  // b.none
+ffffffc01037646c:	f9400a68 	ldr	x8, [x19, #16]
+ffffffc010376470:	eb17011f 	cmp	x8, x23
+ffffffc010376474:	54000081 	b.ne	ffffffc010376484 <remove_waiter+0x6c>  // b.any
+ffffffc010376478:	aa1703e0 	mov	x0, x23
+ffffffc01037647c:	944b0b1e 	bl	ffffffc0116390f4 <rb_next>
+ffffffc010376480:	f9000a60 	str	x0, [x19, #16]
+ffffffc010376484:	91002261 	add	x1, x19, #0x8
+ffffffc010376488:	aa1703e0 	mov	x0, x23
+ffffffc01037648c:	944b0997 	bl	ffffffc011638ae8 <rb_erase>
+ffffffc010376490:	f90002f7 	str	x23, [x23]
+ffffffc010376494:	aa1503e0 	mov	x0, x21
+ffffffc010376498:	f904829f 	str	xzr, [x20, #2304]
+ffffffc01037649c:	944b5b76 	bl	ffffffc01164d274 <_raw_spin_unlock>
+ffffffc0103764a0:	eb1702df 	cmp	x22, x23
+ffffffc0103764a4:	54000ca1 	b.ne	ffffffc010376638 <remove_waiter+0x220>  // b.any
+ffffffc0103764a8:	927ffb15 	and	x21, x24, #0xfffffffffffffffe
+ffffffc0103764ac:	b4000c75 	cbz	x21, ffffffc010376638 <remove_waiter+0x220>
+ffffffc0103764b0:	912372b6 	add	x22, x21, #0x8dc
+ffffffc0103764b4:	aa1603e0 	mov	x0, x22
+ffffffc0103764b8:	944b5b11 	bl	ffffffc01164d0fc <_raw_spin_lock>
+ffffffc0103764bc:	f8418ee8 	ldr	x8, [x23, #24]!
+ffffffc0103764c0:	eb17011f 	cmp	x8, x23
+ffffffc0103764c4:	54000160 	b.eq	ffffffc0103764f0 <remove_waiter+0xd8>  // b.none
+ffffffc0103764c8:	f9447aa8 	ldr	x8, [x21, #2288]
+ffffffc0103764cc:	eb17011f 	cmp	x8, x23
+ffffffc0103764d0:	54000081 	b.ne	ffffffc0103764e0 <remove_waiter+0xc8>  // b.any
+ffffffc0103764d4:	aa1703e0 	mov	x0, x23
+ffffffc0103764d8:	944b0b07 	bl	ffffffc0116390f4 <rb_next>
+ffffffc0103764dc:	f9047aa0 	str	x0, [x21, #2288]
+ffffffc0103764e0:	9123a2a1 	add	x1, x21, #0x8e8
+ffffffc0103764e4:	aa1703e0 	mov	x0, x23
+ffffffc0103764e8:	944b0980 	bl	ffffffc011638ae8 <rb_erase>
+ffffffc0103764ec:	f90002f7 	str	x23, [x23]
+ffffffc0103764f0:	f9400668 	ldr	x8, [x19, #8]
+ffffffc0103764f4:	b4000568 	cbz	x8, ffffffc0103765a0 <remove_waiter+0x188>
+ffffffc0103764f8:	f9400a60 	ldr	x0, [x19, #16]
+ffffffc0103764fc:	b4000080 	cbz	x0, ffffffc01037650c <remove_waiter+0xf4>
+ffffffc010376500:	f9401c08 	ldr	x8, [x0, #56]
+ffffffc010376504:	eb13011f 	cmp	x8, x19
+ffffffc010376508:	54000b01 	b.ne	ffffffc010376668 <remove_waiter+0x250>  // b.any
+ffffffc01037650c:	f94476ae 	ldr	x14, [x21, #2280]
+ffffffc010376510:	9123a2a1 	add	x1, x21, #0x8e8
+ffffffc010376514:	b400034e 	cbz	x14, ffffffc01037657c <remove_waiter+0x164>
+ffffffc010376518:	b940400a 	ldr	w10, [x0, #64]
+ffffffc01037651c:	52800028 	mov	w8, #0x1                   	// #1
+ffffffc010376520:	5280020b 	mov	w11, #0x10                  	// #16
+ffffffc010376524:	5280010c 	mov	w12, #0x8                   	// #8
+ffffffc010376528:	1400000a 	b	ffffffc010376550 <remove_waiter+0x138>
+ffffffc01037652c:	710001bf 	cmp	w13, #0x0
+ffffffc010376530:	9a8b018e 	csel	x14, x12, x11, eq	// eq = none
+ffffffc010376534:	f86e692e 	ldr	x14, [x9, x14]
+ffffffc010376538:	1a9f07ed 	cset	w13, ne	// ne = any
+ffffffc01037653c:	9100412f 	add	x15, x9, #0x10
+ffffffc010376540:	91002130 	add	x16, x9, #0x8
+ffffffc010376544:	0a0d0108 	and	w8, w8, w13
+ffffffc010376548:	9a8f020d 	csel	x13, x16, x15, eq	// eq = none
+ffffffc01037654c:	b40001ee 	cbz	x14, ffffffc010376588 <remove_waiter+0x170>
+ffffffc010376550:	b94029cd 	ldr	w13, [x14, #40]
+ffffffc010376554:	aa0e03e9 	mov	x9, x14
+ffffffc010376558:	6b0d015f 	cmp	w10, w13
+ffffffc01037655c:	1a9fa7ed 	cset	w13, lt	// lt = tstop
+ffffffc010376560:	36fffe6a 	tbz	w10, #31, ffffffc01037652c <remove_waiter+0x114>
+ffffffc010376564:	54fffe4b 	b.lt	ffffffc01037652c <remove_waiter+0x114>  // b.tstop
+ffffffc010376568:	f940240d 	ldr	x13, [x0, #72]
+ffffffc01037656c:	f940192e 	ldr	x14, [x9, #48]
+ffffffc010376570:	cb0e01ad 	sub	x13, x13, x14
+ffffffc010376574:	d37ffdad 	lsr	x13, x13, #63
+ffffffc010376578:	17ffffed 	b	ffffffc01037652c <remove_waiter+0x114>
+ffffffc01037657c:	aa1f03e9 	mov	x9, xzr
+ffffffc010376580:	52800028 	mov	w8, #0x1                   	// #1
+ffffffc010376584:	aa0103ed 	mov	x13, x1
+ffffffc010376588:	f8018c09 	str	x9, [x0, #24]!
+ffffffc01037658c:	a900fc1f 	stp	xzr, xzr, [x0, #8]
+ffffffc010376590:	f90001a0 	str	x0, [x13]
+ffffffc010376594:	34000048 	cbz	w8, ffffffc01037659c <remove_waiter+0x184>
+ffffffc010376598:	f9047aa0 	str	x0, [x21, #2288]
+ffffffc01037659c:	944b0905 	bl	ffffffc0116389b0 <rb_insert_color>
+ffffffc0103765a0:	f94476a8 	ldr	x8, [x21, #2280]
+ffffffc0103765a4:	b4000088 	cbz	x8, ffffffc0103765b4 <remove_waiter+0x19c>
+ffffffc0103765a8:	f9447aa8 	ldr	x8, [x21, #2288]
+ffffffc0103765ac:	f9400d01 	ldr	x1, [x8, #24]
+ffffffc0103765b0:	14000002 	b	ffffffc0103765b8 <remove_waiter+0x1a0>
+ffffffc0103765b4:	aa1f03e1 	mov	x1, xzr
+ffffffc0103765b8:	aa1503e0 	mov	x0, x21
+ffffffc0103765bc:	97fefa0c 	bl	ffffffc010334dec <rt_mutex_setprio>
+ffffffc0103765c0:	f94482a8 	ldr	x8, [x21, #2304]
+ffffffc0103765c4:	b4000368 	cbz	x8, ffffffc010376630 <remove_waiter+0x218>
+ffffffc0103765c8:	f9401d17 	ldr	x23, [x8, #56]
+ffffffc0103765cc:	aa1603e0 	mov	x0, x22
+ffffffc0103765d0:	944b5b29 	bl	ffffffc01164d274 <_raw_spin_unlock>
+ffffffc0103765d4:	b4000337 	cbz	x23, ffffffc010376638 <remove_waiter+0x220>
+ffffffc0103765d8:	9100e2a0 	add	x0, x21, #0x38
+ffffffc0103765dc:	f9800011 	prfm	pstl1strm, [x0]
+ffffffc0103765e0:	885f7c08 	ldxr	w8, [x0]
+ffffffc0103765e4:	11000509 	add	w9, w8, #0x1
+ffffffc0103765e8:	880a7c09 	stxr	w10, w9, [x0]
+ffffffc0103765ec:	35ffffaa 	cbnz	w10, ffffffc0103765e0 <remove_waiter+0x1c8>
+ffffffc0103765f0:	34000308 	cbz	w8, ffffffc010376650 <remove_waiter+0x238>
+ffffffc0103765f4:	11000509 	add	w9, w8, #0x1
+ffffffc0103765f8:	2a080128 	orr	w8, w9, w8
+ffffffc0103765fc:	37f802e8 	tbnz	w8, #31, ffffffc010376658 <remove_waiter+0x240>
+ffffffc010376600:	aa1303e0 	mov	x0, x19
+ffffffc010376604:	944b5b40 	bl	ffffffc01164d304 <_raw_spin_unlock_irq>
+ffffffc010376608:	aa1503e0 	mov	x0, x21
+ffffffc01037660c:	2a1f03e1 	mov	w1, wzr
+ffffffc010376610:	aa1303e2 	mov	x2, x19
+ffffffc010376614:	aa1703e3 	mov	x3, x23
+ffffffc010376618:	aa1f03e4 	mov	x4, xzr
+ffffffc01037661c:	aa1403e5 	mov	x5, x20
+ffffffc010376620:	97fffb67 	bl	ffffffc0103753bc <rt_mutex_adjust_prio_chain>
+ffffffc010376624:	aa1303e0 	mov	x0, x19
+ffffffc010376628:	944b5ae7 	bl	ffffffc01164d1c4 <_raw_spin_lock_irq>
+ffffffc01037662c:	14000003 	b	ffffffc010376638 <remove_waiter+0x220>
+ffffffc010376630:	aa1603e0 	mov	x0, x22
+ffffffc010376634:	944b5b10 	bl	ffffffc01164d274 <_raw_spin_unlock>
+ffffffc010376638:	a9434ff4 	ldp	x20, x19, [sp, #48]
+ffffffc01037663c:	a94257f6 	ldp	x22, x21, [sp, #32]
+ffffffc010376640:	a9415ff8 	ldp	x24, x23, [sp, #16]
+ffffffc010376644:	a8c47bfd 	ldp	x29, x30, [sp], #64
+ffffffc010376648:	f85f8e5e 	ldr	x30, [x18, #-8]!
+ffffffc01037664c:	d65f03c0 	ret
+ffffffc010376650:	52800041 	mov	w1, #0x2                   	// #2
+ffffffc010376654:	14000002 	b	ffffffc01037665c <remove_waiter+0x244>
+ffffffc010376658:	52800021 	mov	w1, #0x1                   	// #1
+ffffffc01037665c:	9411bb57 	bl	ffffffc0107e53b8 <refcount_warn_saturate>
+ffffffc010376660:	17ffffe8 	b	ffffffc010376600 <remove_waiter+0x1e8>
+ffffffc010376664:	d4210000 	brk	#0x800
+ffffffc010376668:	d4210000 	brk	#0x800
+
+Disassembly of section .kernel2:

@@ -1,0 +1,57 @@
+=== PROFILE VALIDATION REPORT ===
+Target Kernel: Samsung SM-X216BXXS9DYJ7 (Linux 5.4.249-qgki-31053672-abX216BXXS9DYJ7)
+Architecture : AArch64 (ARM64 Little-Endian)
+Evidence Base: vmlinux.elf + kallsyms.txt + Ghidra Headless Database + Capstone Disassembly
+
+1. SYMBOL ADDRESS VERIFICATION
+-------------------------------------------------------------------------------------------------------------
+Symbol Name                     | Address (VA)       | Size  | Status   | Evidence Function / Instruction
+-------------------------------------------------------------------------------------------------------------
+remove_waiter                   | 0xffffffc010376418 | 0x254 | VERIFIED | kallsyms.txt + vmlinux.elf text at 0x2f6658
+task_blocks_on_rt_mutex         | 0xffffffc01037606c | 0x314 | VERIFIED | kallsyms.txt + vmlinux.elf text at 0x2f62ac
+rt_mutex_adjust_prio_chain      | 0xffffffc0103753bc | 0x7d4 | VERIFIED | kallsyms.txt + vmlinux.elf text at 0x2f55fc
+rt_mutex_start_proxy_lock       | 0xffffffc010376380 | 0x98  | VERIFIED | kallsyms.txt + vmlinux.elf text at 0x2f65c0
+__rt_mutex_start_proxy_lock     | 0xffffffc010375df8 | 0x70  | VERIFIED | kallsyms.txt + vmlinux.elf text at 0x2f6038
+rt_mutex_cleanup_proxy_lock     | 0xffffffc010376728 | 0x9c  | VERIFIED | kallsyms.txt + vmlinux.elf text at 0x2f6968
+do_futex                        | 0xffffffc0103c02dc | 0xdd8 | VERIFIED | kallsyms.txt + vmlinux.elf text at 0x3404fc
+__arm64_sys_futex               | 0xffffffc0103c3498 | 0x16c | VERIFIED | kallsyms.txt + vmlinux.elf text at 0x3436b8
+futex_requeue                   | 0xffffffc0103c162c | 0x100c| VERIFIED | kallsyms.txt + vmlinux.elf text at 0x34184c
+futex_lock_pi                   | 0xffffffc0103c2638 | 0x800 | VERIFIED | kallsyms.txt + vmlinux.elf text at 0x342858
+futex_unlock_pi                 | 0xffffffc0103c2e38 | 0x660 | VERIFIED | kallsyms.txt + vmlinux.elf text at 0x343058
+futex_wait_requeue_pi           | INLINED (do_futex) | N/A   | VERIFIED | Inlined into do_futex at 0xffffffc0103c0a60
+
+2. STRUCTURE OFFSET VERIFICATION
+-------------------------------------------------------------------------------------------------------------
+Structure Field                 | Offset | Size | Status   | Evidence Cross-References
+-------------------------------------------------------------------------------------------------------------
+task_struct::pi_lock            | 0x8dc  | 4    | VERIFIED | 1. remove_waiter @ 0xffffffc010376454: add x21, x20, #0x8dc
+                                |        |      |          | 2. rt_mutex_adjust_prio_chain @ 0xffffffc0103753fc: add x25, x0, #0x8dc
+                                |        |      |          | 3. task_blocks_on_rt_mutex @ 0xffffffc010376088: add x23, x2, #0x8dc
+task_struct::pi_waiters         | 0x8e8  | 16   | VERIFIED | 1. remove_waiter @ 0xffffffc0103764e0: add x1, x21, #0x8e8
+                                |        |      |          | 2. remove_waiter @ 0xffffffc010376510: add x1, x21, #0x8e8
+task_struct::pi_waiters (left)  | 0x8f0  | 8    | VERIFIED | 1. remove_waiter @ 0xffffffc0103764c8: ldr x8, [x21, #0x8f0]
+                                |        |      |          | 2. remove_waiter @ 0xffffffc0103764dc: str x0, [x21, #0x8f0]
+task_struct::pi_blocked_on      | 0x900  | 8    | VERIFIED | 1. remove_waiter @ 0xffffffc010376498: str xzr, [x20, #0x900]
+                                |        |      |          | 2. remove_waiter @ 0xffffffc0103765c0: ldr x8, [x21, #0x900]
+                                |        |      |          | 3. task_blocks_on_rt_mutex @ 0xffffffc0103761ec: str x22, [x21, #0x900]
+rt_mutex::wait_lock             | 0x00   | 8    | VERIFIED | 1. remove_waiter @ 0xffffffc010376600: mov x0, x19 (wait_lock addr)
+                                |        |      |          | 2. rt_mutex_cleanup_proxy_lock @ 0xffffffc0103767a4: mov x0, x19
+rt_mutex::waiters               | 0x08   | 16   | VERIFIED | 1. remove_waiter @ 0xffffffc010376484: add x1, x19, #8
+                                |        |      |          | 2. remove_waiter @ 0xffffffc0103764f0: ldr x8, [x19, #8]
+rt_mutex::waiters (leftmost)    | 0x10   | 8    | VERIFIED | 1. remove_waiter @ 0xffffffc010376430: ldr x22, [x0, #0x10]
+                                |        |      |          | 2. remove_waiter @ 0xffffffc01037646c: ldr x8, [x19, #0x10]
+                                |        |      |          | 3. remove_waiter @ 0xffffffc010376480: str x0, [x19, #0x10]
+rt_mutex::owner                 | 0x18   | 8    | VERIFIED | 1. remove_waiter @ 0xffffffc01037644c: ldr x24, [x19, #0x18]
+                                |        |      |          | 2. rt_mutex_start_proxy_lock @ 0xffffffc010376404: ldr x8, [x19, #0x18]
+                                |        |      |          | 3. rt_mutex_cleanup_proxy_lock @ 0xffffffc01037675c: ldr x8, [x19, #0x18]
+rt_mutex_waiter::tree_entry     | 0x00   | 24   | VERIFIED | 1. remove_waiter @ 0xffffffc010376460: ldr x8, [x23] (tree_entry.rb_parent_color)
+                                |        |      |          | 2. remove_waiter @ 0xffffffc010376490: str x23, [x23] (RB_CLEAR_NODE)
+rt_mutex_waiter::pi_tree_entry  | 0x18   | 24   | VERIFIED | 1. remove_waiter @ 0xffffffc0103764bc: ldr x8, [x23, #0x18]!
+                                |        |      |          | 2. remove_waiter @ 0xffffffc0103764ec: str x23, [x23]
+rt_mutex_waiter::task           | 0x30   | 8    | VERIFIED | 1. rt_mutex_next_owner @ 0xffffffc010376688: ldr x0, [x8, #0x30]
+                                |        |      |          | 2. __rt_mutex_start_proxy_lock @ 0xffffffc010375d94: ldr x1, [x24, #0x30]
+rt_mutex_waiter::lock           | 0x38   | 8    | VERIFIED | 1. remove_waiter @ 0xffffffc010376440: ldr x8, [x22, #0x38]
+                                |        |      |          | 2. remove_waiter @ 0xffffffc010376500: ldr x8, [x0, #0x38]
+                                |        |      |          | 3. remove_waiter @ 0xffffffc0103765c8: ldr x23, [x8, #0x38]
+rt_mutex_waiter::prio           | 0x40   | 4    | VERIFIED | 1. remove_waiter @ 0xffffffc010376518: ldr w10, [x0, #0x40]
+rt_mutex_waiter::deadlocked     | 0x44   | 2    | VERIFIED | Linux 5.4 ABI contiguous layout following prio (4 bytes at 0x40)

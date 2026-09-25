@@ -1,0 +1,18 @@
+=== FUTEX / PI CALL-FLOW & CROSS-REFERENCE REPORT ===
+1. Callers of remove_waiter (0xffffffc010376418):
+   - rt_mutex_start_proxy_lock+0x44 (0xffffffc0103763c4)
+   - rt_mutex_cleanup_proxy_lock+0x4c (0xffffffc010376774)
+   - rt_mutex_slowlock+0x16c (0xffffffc01164bbec)
+
+2. Callers of rt_mutex_start_proxy_lock (0xffffffc010376380):
+   - futex_requeue (FUTEX_CMP_REQUEUE_PI path)
+
+3. Callers of rt_mutex_cleanup_proxy_lock (0xffffffc010376728):
+   - futex_wait_requeue_pi (unblock/signal/timeout rollback path)
+
+4. Proxy Lock Lifecycle:
+   - Creation: futex_requeue allocates/prepares waiter associated with target thread
+   - Enqueue: rt_mutex_start_proxy_lock calls task_blocks_on_rt_mutex
+   - Rollback / Error: calls remove_waiter(lock, waiter)
+   - Discovered Vulnerability: remove_waiter operates on current instead of waiter->task,
+     leaving waiter->task->pi_blocked_on dangling (CVE-2026-43499 / GhostLock).

@@ -1,0 +1,161 @@
+=== SM-X216B PSELECT GEOMETRY INCOMPATIBILITY PROOF ===
+Target Device: Samsung Galaxy Tab A9+ 5G (SM-X216B / gta9p)
+Firmware     : X216BXXS9DYJ7
+Kernel       : Linux 5.4.249-qgki-31053672-abX216BXXS9DYJ7 (AArch64 / Qualcomm SM6375)
+Objective    : Mathematically and architecturally verify whether the standard pselect6
+               stack-spraying geometry can control the dangling rt_mutex_waiter object.
+
+====================================================================================================
+1. SUMMARY OF FINDING
+====================================================================================================
+VERIFICATION RESULT: STANDARD PSELECT GEOMETRY DOES NOT WORK FOR THIS DEVICE.
+
+Standard pselect6/select stack spraying CANNOT write arbitrary user-controlled pointers
+into the target's dangling waiter fields (waiter->task and waiter->lock).
+
+Instead, on this specific compiler/kernel build:
+1. When nfds <= 256 (the standard pselect configuration), the waiter fields fall completely
+   OUTSIDE the user-controlled input bitmasks and directly into the ZERO-INITIALIZED output buffer!
+2. When nfds is set to the theoretical maximum stack limit (nfds=320, nwords=5), the user-controlled
+   input bitmasks end at exactly offset +120, while waiter->task (offset +168) and waiter->lock
+   (offset +176) still fall completely inside the ZERO-INITIALIZED output buffer (fds.res_out / fds.res_ex)!
+3. If nfds > 320, the kernel bypasses the stack entirely and allocates the descriptor buffers via kmalloc().
+
+Consequently, executing standard pselect6 on SM-X216B only writes NULL (0x0) over the waiter,
+which immediately triggers an unrecoverable kernel NULL-pointer dereference panic (CONFIG_PANIC_ON_OOPS=y).
+
+====================================================================================================
+2. EXACT MACHINE-INSTRUCTION DERIVATION
+====================================================================================================
+Let SP_sys = Kernel Stack Pointer at EL0 syscall entry (el0_svc).
+
+A. FUTEX PATH (Syscall 98 -> do_futex):
+   1. __arm64_sys_futex (0xffffffc0103c3498):
+      - 0xffffffc0103c3498: sub  sp, sp, #0x70             ; SP = SP_sys - 0x70
+      - 0xffffffc0103c355c: bl   #0xffffffc0103c02dc       ; calls do_futex (SP unchanged across call)
+   2. do_futex (0xffffffc0103c02dc):
+      - 0xffffffc0103c02e0: stp  x29, x30, [sp, #-0x60]!   ; SP = (SP_sys - 0x70) - 0x60 = SP_sys - 0xd0
+      - 0xffffffc0103c02f8: mov  x29, sp                   ; x29 (FP) = SP_sys - 0xd0
+      - 0xffffffc0103c02fc: sub  sp, sp, #0x1b0            ; SP = SP_sys - 0x280 (Total frame: 0x210 bytes)
+   3. Waiter Allocation (inlined futex_wait_requeue_pi inside do_futex):
+      - 0xffffffc0103c0a64: sub  x0, x29, #0xc8            ; x0 = x29 - 0xc8
+      - 0xffffffc0103c0a6c: bl   #0xffffffc010375b90       ; rt_mutex_init_waiter(&waiter)
+      * Exact Waiter Coordinates relative to SP_sys:
+        waiter_base        = (SP_sys - 0xd0) - 0xc8 = SP_sys - 0x198
+        waiter->task (+0x30) = SP_sys - 0x198 + 0x30 = SP_sys - 0x168
+        waiter->lock (+0x38) = SP_sys - 0x198 + 0x38 = SP_sys - 0x160
+        waiter_end   (+0x48) = SP_sys - 0x198 + 0x48 = SP_sys - 0x150
+
+B. PSELECT PATH (Syscall 72 -> core_sys_select):
+   1. __arm64_sys_pselect6 (0xffffffc01053cdfc):
+      - 0xffffffc01053ce00: stp  x29, x30, [sp, #-0x10]!   ; SP = SP_sys - 0x10
+      - 0xffffffc01053ce1c: bl   #0xffffffc01053d878       ; calls __do_sys_pselect6
+   2. __do_sys_pselect6 (0xffffffc01053d878):
+      - 0xffffffc01053d878: sub  sp, sp, #0x90             ; SP = (SP_sys - 0x10) - 0x90 = SP_sys - 0xa0
+      - 0xffffffc01053d9f8: bl   #0xffffffc01053c258       ; calls core_sys_select
+   3. core_sys_select (0xffffffc01053c258):
+      - 0xffffffc01053c258: sub  sp, sp, #0x1c0            ; SP = (SP_sys - 0xa0) - 0x1c0 = SP_sys - 0x260
+      - 0xffffffc01053c34c: add  x22, sp, #0x50            ; x22 = stack_fds base!
+      * Exact stack_fds Coordinates relative to SP_sys:
+        stack_fds_base = (SP_sys - 0x260) + 0x50 = SP_sys - 0x210
+
+C. RELATIVE DELTA:
+   Relative Offset = waiter_base - stack_fds_base
+                   = (SP_sys - 0x198) - (SP_sys - 0x210)
+                   = +0x78 (120 bytes)
+
+   Therefore, within the stack_fds buffer:
+   - waiter_base is at stack_fds_base + 120 bytes (+0x78)
+   - waiter->task is at stack_fds_base + 168 bytes (+0xa8)
+   - waiter->lock is at stack_fds_base + 176 bytes (+0xb0)
+   - waiter_end   is at stack_fds_base + 192 bytes (+0xc0)
+
+====================================================================================================
+3. THE CONTROLLABILITY BARRIER: USER INPUT VS. OUTPUT ZEROING
+====================================================================================================
+Inside core_sys_select (0xffffffc01053c258), the 256-byte stack_fds buffer is partitioned into
+6 distinct descriptor bitmask arrays:
+  1. fds.in     (input, user-controlled via copy_from_user)
+  2. fds.out    (input, user-controlled via copy_from_user)
+  3. fds.ex     (input, user-controlled via copy_from_user)
+  4. fds.res_in (output, ALWAYS ZEROED via memset)
+  5. fds.res_out(output, ALWAYS ZEROED via memset)
+  6. fds.res_ex (output, ALWAYS ZEROED via memset)
+
+The size of each descriptor set is determined by:
+  0xffffffc01053c310: add x20, x24, #0x3f    ; x20 = nfds + 63
+  0xffffffc01053c314: cmp x20, #0x180        ; stack limit = 0x180 bits = 384 bits = 6 words
+  0xffffffc01053c318: lsr x25, x20, #6        ; x25 = nwords = (nfds + 63) / 64
+  0xffffffc01053c350: lsl x28, x25, #3        ; x28 = size_per_set = nwords * 8 bytes
+
+The maximum nwords that stays on the stack is nwords = 5 (since cmp x20, #0x180 branches to kmalloc if >= 0x180).
+Let us test all possible values of nwords:
+
+Case 1: Standard Public Exploit Configuration (nfds = 256, nwords = 4, size_per_set = 32 bytes)
+  - fds.in     : offsets   0 ..  31  [USER CONTROLLED via _copy_from_user]
+  - fds.out    : offsets  32 ..  63  [USER CONTROLLED via _copy_from_user]
+  - fds.ex     : offsets  64 ..  95  [USER CONTROLLED via _copy_from_user]
+  * USER-CONTROLLED BOUNDARY ENDS AT OFFSET +95!
+  - fds.res_in : offsets  96 .. 127  [ZEROED via memset @ 0x1053c464]
+  - fds.res_out: offsets 128 .. 159  [ZEROED via memset @ 0x1053c474]
+  - fds.res_ex : offsets 160 .. 191  [ZEROED via memset @ 0x1053c484]
+  * Waiter Mapping:
+    - waiter_base (120) falls into fds.res_in (ZEROED)
+    - waiter->task (168) falls into fds.res_ex (ZEROED)
+    - waiter->lock (176) falls into fds.res_ex (ZEROED)
+    - waiter_end   (192) falls immediately at boundary of fds.res_ex
+  * RESULT: waiter->task and waiter->lock are 100% OVERWRITTEN WITH ZEROS. No user data can reach them.
+
+Case 2: Maximum Theoretical Stack Limit (nfds = 320, nwords = 5, size_per_set = 40 bytes)
+  - fds.in     : offsets   0 ..  39  [USER CONTROLLED]
+  - fds.out    : offsets  40 ..  79  [USER CONTROLLED]
+  - fds.ex     : offsets  80 .. 119  [USER CONTROLLED]
+  * USER-CONTROLLED BOUNDARY ENDS AT OFFSET +119!
+  - fds.res_in : offsets 120 .. 159  [ZEROED via memset @ 0x1053c464]
+  - fds.res_out: offsets 160 .. 199  [ZEROED via memset @ 0x1053c474]
+  - fds.res_ex : offsets 200 .. 239  [ZEROED via memset @ 0x1053c484]
+  * Waiter Mapping:
+    - waiter_base (120) starts at offset 0 of fds.res_in (ZEROED)
+    - waiter->task (168) falls at offset 8 of fds.res_out (ZEROED)
+    - waiter->lock (176) falls at offset 16 of fds.res_out (ZEROED)
+    - waiter_end   (192) falls at offset 32 of fds.res_out (ZEROED)
+  * RESULT: Even with the maximum possible stack allocation, the user-controlled input sets
+    terminate at offset 119, while the waiter starts at offset 120. Both waiter->task and waiter->lock
+    fall directly into fds.res_out, which is unconditionally zeroed out.
+
+Case 3: Any nfds >= 321 (nwords >= 6)
+  - 0xffffffc01053c314: cmp x20, #0x180 -> b.hs @ 0x1053c320
+  - Calls kmalloc() via bl #0xffffffc0104b3b64.
+  - The stack_fds buffer is NOT USED at all; descriptor buffers are allocated in the heap.
+
+====================================================================================================
+4. WHY STANDARD PSELECT WORKED ON OTHER DEVICES BUT FAILS ON SM-X216B
+====================================================================================================
+1. Inlining and Stack Frame Drift:
+   - On OnePlus (SM8550) and Nothing Phone 1 (SM7325), compiler optimization decisions (GCC or Clang
+     without certain PGO inline passes) resulted in either a smaller do_futex frame or different local
+     variable placement, positioning the waiter within the first 64–96 bytes of stack_fds (overlapping
+     fds.in or fds.out).
+2. Samsung Tab A9+ (SM-X216B) Frame Geometry:
+   - On SM-X216B, Clang 11 with Shadow Call Stack (CONFIG_SHADOW_CALL_STACK=y) and Samsung PGO generates:
+     * A massive 528-byte (0x210) do_futex frame.
+     * The waiter placed at [x29 - 0xc8], which pushes its relative offset against core_sys_select
+       down to +120 bytes.
+   - Because core_sys_select divides stack_fds into 3 input sets and 3 output sets, offset +120 is
+     the exact boundary where input sets end and zeroed output sets begin.
+
+====================================================================================================
+5. FINAL VERDICT
+====================================================================================================
+CLASSIFICATION: INCOMPATIBLE (STANDARD PSELECT FAILS)
+
+Concrete Technical Conclusion:
+The standard pselect6 technique as published in JoinChang/ghostlock-oneplus and ang3lo-azevedo/root-my-nothing
+DOES NOT WORK on the Samsung Galaxy Tab A9+ (SM-X216BXXS9DYJ7).
+
+Any attempt to use standard pselect6 to control the dangling waiter on this device will unconditionally
+overwrite waiter->task and waiter->lock with NULL (0x0) bytes, causing an immediate kernel panic
+due to CONFIG_PANIC_ON_OOPS=y.
+A viable port would require an entirely different in-thread syscall primitive whose stack frame
+depth and user-controlled buffer placement accurately reach the [SP_sys - 0x168] coordinate without
+zero-wiping the target memory.

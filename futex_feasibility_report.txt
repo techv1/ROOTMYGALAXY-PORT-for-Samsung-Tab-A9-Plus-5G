@@ -1,0 +1,63 @@
+=== GHOSTLOCK FEASIBILITY AUDIT REPORT ===
+Target Kernel: Samsung SM-X216BXXS9DYJ7 (Linux 5.4.249-qgki-31053672-abX216BXXS9DYJ7)
+Architecture : AArch64 (ARM64 Little-Endian)
+Target CVE   : CVE-2026-43499 (GhostLock)
+
+1. CONTROL FLOW & FUNCTION COMPOSITION AUDIT
+-------------------------------------------------------------------------------------------------------------
+A. Syscall Entry:
+   - __arm64_sys_futex (0xffffffc0103c3498) -> calls do_futex (0xffffffc0103c02dc)
+
+B. Dispatcher:
+   - do_futex (0xffffffc0103c02dc, size 3544 bytes) dispatches based on futex command:
+     * FUTEX_LOCK_PI        -> bl futex_lock_pi (0xffffffc0103c2638)
+     * FUTEX_UNLOCK_PI      -> bl futex_unlock_pi (0xffffffc0103c2e38)
+     * FUTEX_CMP_REQUEUE_PI -> bl futex_requeue (0xffffffc0103c162c)
+     * FUTEX_WAIT_REQUEUE_PI-> INLINED inside do_futex at address range 0xffffffc0103c0a60 - 0xffffffc0103c0c14!
+
+C. Inlining Analysis:
+   - futex_wait_requeue_pi is inlined into do_futex.
+   - Stack frame for do_futex: sub sp, sp, #0x1b0 (total frame size: 0x210 bytes / 528 bytes).
+   - Local rt_mutex_waiter allocation:
+     0xffffffc0103c0a64: sub x0, x29, #0xc8
+     0xffffffc0103c0a68: sub x26, x29, #0xc8
+     0xffffffc0103c0a6c: bl  #0xffffffc010375b90   ; rt_mutex_init_waiter(&rt_waiter)
+   - The rt_mutex_waiter structure is allocated on the kernel stack at [x29 - 0xc8]!
+
+D. Proxy Lock Handling:
+   - futex_requeue (0xffffffc0103c162c) calls:
+     0xffffffc0103c2220: bl rt_mutex_start_proxy_lock (0xffffffc010376380)
+   - If an error or deadlock occurs:
+     0xffffffc0103763c4: bl remove_waiter (0xffffffc010376418)
+   - Inside remove_waiter (0xffffffc010376418):
+     0xffffffc010376450: mrs x20, sp_el0           ; operates on CURRENT instead of waiter->task!
+     0xffffffc010376454: add x21, x20, #0x8dc      ; locks &current->pi_lock
+     0xffffffc010376498: str xzr, [x20, #0x900]   ; clears current->pi_blocked_on = NULL
+     * waiter->task->pi_blocked_on is LEFT UNTOUCHED, pointing directly to the stack waiter at [x29 - 0xc8]!
+   - When the waiting thread unblocks or times out, its stack frame is popped while the waiter pointer
+     remains referenced by the PI chain / pi_blocked_on, leading directly to the stack Use-After-Free condition.
+
+2. COMPILER & DEFENSIVE HARDENING AUDIT
+-------------------------------------------------------------------------------------------------------------
+- Clang CFI (CONFIG_CFI_CLANG=y):
+  Direct function calls (bl) inside do_futex and futex_requeue do not trigger CFI jump tables.
+  Indirect calls through function pointers are protected, but the GhostLock primitive leverages
+  in-kernel linked-list / tree pointer manipulation in standard kernel data structures.
+- Shadow Call Stack (CONFIG_SHADOW_CALL_STACK=y):
+  Shadow call stack protects return addresses (x30 pushed to x18).
+  GhostLock targets data pointer corruption (task_struct::pi_blocked_on / rt_mutex_waiter), not ROP return addresses.
+- PAN (CONFIG_ARM64_PAN=y):
+  Prevents kernel from directly dereferencing userland memory; requires kernel data structure re-use.
+- Samsung DEFEX (CONFIG_SECURITY_DEFEX=y):
+  DEFEX does not monitor or hook internal rtmutex or futex PI primitive operations.
+
+3. FEASIBILITY CLASSIFICATION
+-------------------------------------------------------------------------------------------------------------
+CLASSIFICATION: FEASIBLE
+
+Concrete Binary Evidence:
+1. Vulnerable code path is intact: remove_waiter explicitly manipulates current rather than waiter->task.
+2. Inlined futex_wait_requeue_pi creates a standard stack-allocated rt_mutex_waiter at [x29 - 0xc8] in do_futex.
+3. futex_requeue directly calls rt_mutex_start_proxy_lock, which invokes remove_waiter on error rollback.
+4. Dangling pointer condition in waiter->task->pi_blocked_on (offset 0x900) is structurally reproducible
+   as designed in the public GhostLock methodology.

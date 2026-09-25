@@ -1,0 +1,1080 @@
+ffffffc0114710b0 <do_ipv6_setsockopt>:
+ffffffc0114710b0:	f800865e 	str	x30, [x18], #8
+ffffffc0114710b4:	a9ba7bfd 	stp	x29, x30, [sp, #-96]!
+ffffffc0114710b8:	a9016ffc 	stp	x28, x27, [sp, #16]
+ffffffc0114710bc:	a90267fa 	stp	x26, x25, [sp, #32]
+ffffffc0114710c0:	a9035ff8 	stp	x24, x23, [sp, #48]
+ffffffc0114710c4:	a90457f6 	stp	x22, x21, [sp, #64]
+ffffffc0114710c8:	a9054ff4 	stp	x20, x19, [sp, #80]
+ffffffc0114710cc:	910003fd 	mov	x29, sp
+ffffffc0114710d0:	d10683ff 	sub	sp, sp, #0x1a0
+ffffffc0114710d4:	b0007b48 	adrp	x8, ffffffc0123da000 <ncm_fops+0x48>
+ffffffc0114710d8:	f9440908 	ldr	x8, [x8, #2064]
+ffffffc0114710dc:	52800029 	mov	w9, #0x1                   	// #1
+ffffffc0114710e0:	2a0303f6 	mov	w22, w3
+ffffffc0114710e4:	aa0203f7 	mov	x23, x2
+ffffffc0114710e8:	f81f03a8 	stur	x8, [x29, #-16]
+ffffffc0114710ec:	39404808 	ldrb	w8, [x0, #18]
+ffffffc0114710f0:	aa0003f3 	mov	x19, x0
+ffffffc0114710f4:	2a0103f9 	mov	w25, w1
+ffffffc0114710f8:	1ac82128 	lsl	w8, w9, w8
+ffffffc0114710fc:	12820809 	mov	w9, #0xffffefbf            	// #-4161
+ffffffc011471100:	6a09011f 	tst	w8, w9
+ffffffc011471104:	54000060 	b.eq	ffffffc011471110 <do_ipv6_setsockopt+0x60>  // b.none
+ffffffc011471108:	f941a67b 	ldr	x27, [x19, #840]
+ffffffc01147110c:	14000002 	b	ffffffc011471114 <do_ipv6_setsockopt+0x64>
+ffffffc011471110:	aa1f03fb 	mov	x27, xzr
+ffffffc011471114:	f9401a78 	ldr	x24, [x19, #48]
+ffffffc011471118:	5100073c 	sub	w28, w25, #0x1
+ffffffc01147111c:	7100c39f 	cmp	w28, #0x30
+ffffffc011471120:	2a1f03f5 	mov	w21, wzr
+ffffffc011471124:	1a9f27e8 	cset	w8, cc	// cc = lo, ul, last
+ffffffc011471128:	b4000977 	cbz	x23, ffffffc011471254 <do_ipv6_setsockopt+0x1a4>
+ffffffc01147112c:	710012df 	cmp	w22, #0x4
+ffffffc011471130:	54000923 	b.cc	ffffffc011471254 <do_ipv6_setsockopt+0x1a4>  // b.lo, b.ul, b.last
+ffffffc011471134:	d5384109 	mrs	x9, sp_el0
+ffffffc011471138:	3940f92c 	ldrb	w12, [x9, #62]
+ffffffc01147113c:	f940052b 	ldr	x11, [x9, #8]
+ffffffc011471140:	d378deea 	lsl	x10, x23, #8
+ffffffc011471144:	3728008c 	tbnz	w12, #5, ffffffc011471154 <do_ipv6_setsockopt+0xa4>
+ffffffc011471148:	f940012d 	ldr	x13, [x9]
+ffffffc01147114c:	aa1703ec 	mov	x12, x23
+ffffffc011471150:	36d0004d 	tbz	w13, #26, ffffffc011471158 <do_ipv6_setsockopt+0xa8>
+ffffffc011471154:	8a8a22ec 	and	x12, x23, x10, asr #8
+ffffffc011471158:	b100118c 	adds	x12, x12, #0x4
+ffffffc01147115c:	9a8b83eb 	csel	x11, xzr, x11, hi	// hi = pmore
+ffffffc011471160:	da9f318c 	csinv	x12, x12, xzr, cc	// cc = lo, ul, last
+ffffffc011471164:	fa0b019f 	sbcs	xzr, x12, x11
+ffffffc011471168:	9a9f87ec 	cset	x12, ls	// ls = plast
+ffffffc01147116c:	b40004cc 	cbz	x12, ffffffc011471204 <do_ipv6_setsockopt+0x154>
+ffffffc011471170:	f940052b 	ldr	x11, [x9, #8]
+ffffffc011471174:	8a8a22ec 	and	x12, x23, x10, asr #8
+ffffffc011471178:	ea2b019f 	bics	xzr, x12, x11
+ffffffc01147117c:	9a9f02ea 	csel	x10, x23, xzr, eq	// eq = none
+ffffffc011471180:	d503229f 	csdb
+ffffffc011471184:	14000006 	b	ffffffc01147119c <do_ipv6_setsockopt+0xec>
+ffffffc011471188:	14000001 	b	ffffffc01147118c <do_ipv6_setsockopt+0xdc>
+ffffffc01147118c:	d503201f 	nop
+ffffffc011471190:	14000006 	b	ffffffc0114711a8 <do_ipv6_setsockopt+0xf8>
+ffffffc011471194:	d503201f 	nop
+ffffffc011471198:	14000013 	b	ffffffc0114711e4 <do_ipv6_setsockopt+0x134>
+ffffffc01147119c:	9000b9eb 	adrp	x11, ffffffc012bad000 <sane_buffer>
+ffffffc0114711a0:	f943a96b 	ldr	x11, [x11, #1872]
+ffffffc0114711a4:	3727ff8b 	tbnz	w11, #4, ffffffc011471194 <do_ipv6_setsockopt+0xe4>
+ffffffc0114711a8:	d53b422b 	mrs	x11, daif
+ffffffc0114711ac:	1219016c 	and	w12, w11, #0x80
+ffffffc0114711b0:	3500006c 	cbnz	w12, ffffffc0114711bc <do_ipv6_setsockopt+0x10c>
+ffffffc0114711b4:	52800c0c 	mov	w12, #0x60                  	// #96
+ffffffc0114711b8:	d50342df 	msr	daifset, #0x2
+ffffffc0114711bc:	f9400929 	ldr	x9, [x9, #16]
+ffffffc0114711c0:	d538202c 	mrs	x12, ttbr1_el1
+ffffffc0114711c4:	aa0903ed 	mov	x13, x9
+ffffffc0114711c8:	b340bd8d 	bfxil	x13, x12, #0, #48
+ffffffc0114711cc:	d518202d 	msr	ttbr1_el1, x13
+ffffffc0114711d0:	d5033fdf 	isb
+ffffffc0114711d4:	d5182009 	msr	ttbr0_el1, x9
+ffffffc0114711d8:	d5033fdf 	isb
+ffffffc0114711dc:	d51b422b 	msr	daif, x11
+ffffffc0114711e0:	d503201f 	nop
+ffffffc0114711e4:	2a1f03e9 	mov	w9, wzr
+ffffffc0114711e8:	b9400155 	ldr	w21, [x10]
+ffffffc0114711ec:	14000008 	b	ffffffc01147120c <do_ipv6_setsockopt+0x15c>
+ffffffc0114711f0:	14000001 	b	ffffffc0114711f4 <do_ipv6_setsockopt+0x144>
+ffffffc0114711f4:	d503201f 	nop
+ffffffc0114711f8:	14000008 	b	ffffffc011471218 <do_ipv6_setsockopt+0x168>
+ffffffc0114711fc:	d503201f 	nop
+ffffffc011471200:	340002a9 	cbz	w9, ffffffc011471254 <do_ipv6_setsockopt+0x1a4>
+ffffffc011471204:	128001b4 	mov	w20, #0xfffffff2            	// #-14
+ffffffc011471208:	1400034a 	b	ffffffc011471f30 <do_ipv6_setsockopt+0xe80>
+ffffffc01147120c:	9000b9ea 	adrp	x10, ffffffc012bad000 <sane_buffer>
+ffffffc011471210:	f943a94a 	ldr	x10, [x10, #1872]
+ffffffc011471214:	3727ff4a 	tbnz	w10, #4, ffffffc0114711fc <do_ipv6_setsockopt+0x14c>
+ffffffc011471218:	d53b422a 	mrs	x10, daif
+ffffffc01147121c:	1219014b 	and	w11, w10, #0x80
+ffffffc011471220:	3500006b 	cbnz	w11, ffffffc01147122c <do_ipv6_setsockopt+0x17c>
+ffffffc011471224:	52800c0b 	mov	w11, #0x60                  	// #96
+ffffffc011471228:	d50342df 	msr	daifset, #0x2
+ffffffc01147122c:	d538202b 	mrs	x11, ttbr1_el1
+ffffffc011471230:	9240bd6b 	and	x11, x11, #0xffffffffffff
+ffffffc011471234:	d140056c 	sub	x12, x11, #0x1, lsl #12
+ffffffc011471238:	d518200c 	msr	ttbr0_el1, x12
+ffffffc01147123c:	d5033fdf 	isb
+ffffffc011471240:	d518202b 	msr	ttbr1_el1, x11
+ffffffc011471244:	d5033fdf 	isb
+ffffffc011471248:	d51b422a 	msr	daif, x10
+ffffffc01147124c:	d503201f 	nop
+ffffffc011471250:	35fffda9 	cbnz	w9, ffffffc011471204 <do_ipv6_setsockopt+0x154>
+ffffffc011471254:	d2800029 	mov	x9, #0x1                   	// #1
+ffffffc011471258:	f2a18309 	movk	x9, #0xc18, lsl #16
+ffffffc01147125c:	f2dfc009 	movk	x9, #0xfe00, lsl #32
+ffffffc011471260:	9adc2529 	lsr	x9, x9, x28
+ffffffc011471264:	710002bf 	cmp	w21, #0x0
+ffffffc011471268:	0a080128 	and	w8, w9, w8
+ffffffc01147126c:	1a9f07fa 	cset	w26, ne	// ne = any
+ffffffc011471270:	b90007e8 	str	w8, [sp, #4]
+ffffffc011471274:	34000088 	cbz	w8, ffffffc011471284 <do_ipv6_setsockopt+0x1d4>
+ffffffc011471278:	d000b580 	adrp	x0, ffffffc012b23000 <net_core_table+0x660>
+ffffffc01147127c:	91136000 	add	x0, x0, #0x4d8
+ffffffc011471280:	9407605f 	bl	ffffffc0116493fc <mutex_lock>
+ffffffc011471284:	aa1303e0 	mov	x0, x19
+ffffffc011471288:	2a1f03e1 	mov	w1, wzr
+ffffffc01147128c:	97fa1f53 	bl	ffffffc0112f8fd8 <lock_sock_nested>
+ffffffc011471290:	79402268 	ldrh	w8, [x19, #16]
+ffffffc011471294:	7100291f 	cmp	w8, #0xa
+ffffffc011471298:	54002aa1 	b.ne	ffffffc0114717ec <do_ipv6_setsockopt+0x73c>  // b.any
+ffffffc01147129c:	7101379f 	cmp	w28, #0x4d
+ffffffc0114712a0:	12800b74 	mov	w20, #0xffffffa4            	// #-92
+ffffffc0114712a4:	54004f08 	b.hi	ffffffc011471c84 <do_ipv6_setsockopt+0xbd4>  // b.pmore
+ffffffc0114712a8:	90007ae8 	adrp	x8, ffffffc0123cd000 <rtm_ipv6_policy+0x60>
+ffffffc0114712ac:	91107908 	add	x8, x8, #0x41e
+ffffffc0114712b0:	10000089 	adr	x9, ffffffc0114712c0 <do_ipv6_setsockopt+0x210>
+ffffffc0114712b4:	787c790a 	ldrh	w10, [x8, x28, lsl #1]
+ffffffc0114712b8:	8b0a0929 	add	x9, x9, x10, lsl #2
+ffffffc0114712bc:	d61f0120 	br	x9
+ffffffc0114712c0:	9100c3e0 	add	x0, sp, #0x30
+ffffffc0114712c4:	52802102 	mov	w2, #0x108                 	// #264
+ffffffc0114712c8:	2a1f03e1 	mov	w1, wzr
+ffffffc0114712cc:	97b06e2d 	bl	ffffffc01008cb80 <__memset>
+ffffffc0114712d0:	710422df 	cmp	w22, #0x108
+ffffffc0114712d4:	54006223 	b.cc	ffffffc011471f18 <do_ipv6_setsockopt+0xe68>  // b.lo, b.ul, b.last
+ffffffc0114712d8:	9100c3e0 	add	x0, sp, #0x30
+ffffffc0114712dc:	52802102 	mov	w2, #0x108                 	// #264
+ffffffc0114712e0:	aa1703e1 	mov	x1, x23
+ffffffc0114712e4:	97b0ba9e 	bl	ffffffc01009fd5c <_copy_from_user>
+ffffffc0114712e8:	b50037e0 	cbnz	x0, ffffffc0114719e4 <do_ipv6_setsockopt+0x934>
+ffffffc0114712ec:	794073e8 	ldrh	w8, [sp, #56]
+ffffffc0114712f0:	7100291f 	cmp	w8, #0xa
+ffffffc0114712f4:	54005021 	b.ne	ffffffc011471cf8 <do_ipv6_setsockopt+0xc48>  // b.any
+ffffffc0114712f8:	794173e8 	ldrh	w8, [sp, #184]
+ffffffc0114712fc:	7100291f 	cmp	w8, #0xa
+ffffffc011471300:	54004fc1 	b.ne	ffffffc011471cf8 <do_ipv6_setsockopt+0xc48>  // b.any
+ffffffc011471304:	7100af3f 	cmp	w25, #0x2b
+ffffffc011471308:	54006aa0 	b.eq	ffffffc01147205c <do_ipv6_setsockopt+0xfac>  // b.none
+ffffffc01147130c:	7100bb3f 	cmp	w25, #0x2e
+ffffffc011471310:	54006aa0 	b.eq	ffffffc011472064 <do_ipv6_setsockopt+0xfb4>  // b.none
+ffffffc011471314:	7100b33f 	cmp	w25, #0x2c
+ffffffc011471318:	54006c41 	b.ne	ffffffc0114720a0 <do_ipv6_setsockopt+0xff0>  // b.any
+ffffffc01147131c:	2a1f03f5 	mov	w21, wzr
+ffffffc011471320:	2a1f03e0 	mov	w0, wzr
+ffffffc011471324:	14000361 	b	ffffffc0114720a8 <do_ipv6_setsockopt+0xff8>
+ffffffc011471328:	f9402b00 	ldr	x0, [x24, #80]
+ffffffc01147132c:	528001a1 	mov	w1, #0xd                   	// #13
+ffffffc011471330:	97ba4cca 	bl	ffffffc010304658 <ns_capable>
+ffffffc011471334:	360045a0 	tbz	w0, #0, ffffffc011471be8 <do_ipv6_setsockopt+0xb38>
+ffffffc011471338:	34004c76 	cbz	w22, ffffffc011471cc4 <do_ipv6_setsockopt+0xc14>
+ffffffc01147133c:	b4005ef7 	cbz	x23, ffffffc011471f18 <do_ipv6_setsockopt+0xe68>
+ffffffc011471340:	71000adf 	cmp	w22, #0x2
+ffffffc011471344:	54005ea3 	b.cc	ffffffc011471f18 <do_ipv6_setsockopt+0xe68>  // b.lo, b.ul, b.last
+ffffffc011471348:	711fe2df 	cmp	w22, #0x7f8
+ffffffc01147134c:	54005e68 	b.hi	ffffffc011471f18 <do_ipv6_setsockopt+0xe68>  // b.pmore
+ffffffc011471350:	12000ac8 	and	w8, w22, #0x7
+ffffffc011471354:	35005e28 	cbnz	w8, ffffffc011471f18 <do_ipv6_setsockopt+0xe68>
+ffffffc011471358:	2a1603e1 	mov	w1, w22
+ffffffc01147135c:	aa1703e0 	mov	x0, x23
+ffffffc011471360:	97c107c1 	bl	ffffffc0104b3264 <memdup_user>
+ffffffc011471364:	aa0003f4 	mov	x20, x0
+ffffffc011471368:	b13ffc1f 	cmn	x0, #0xfff
+ffffffc01147136c:	540048c2 	b.cs	ffffffc011471c84 <do_ipv6_setsockopt+0xbd4>  // b.hs, b.nlast
+ffffffc011471370:	39400688 	ldrb	w8, [x20, #1]
+ffffffc011471374:	531d7108 	lsl	w8, w8, #3
+ffffffc011471378:	11002108 	add	w8, w8, #0x8
+ffffffc01147137c:	6b16011f 	cmp	w8, w22
+ffffffc011471380:	54004a49 	b.ls	ffffffc011471cc8 <do_ipv6_setsockopt+0xc18>  // b.plast
+ffffffc011471384:	aa1403e0 	mov	x0, x20
+ffffffc011471388:	97c22b81 	bl	ffffffc0104fc18c <kfree>
+ffffffc01147138c:	140002e3 	b	ffffffc011471f18 <do_ipv6_setsockopt+0xe68>
+ffffffc011471390:	710052df 	cmp	w22, #0x14
+ffffffc011471394:	b90043ff 	str	wzr, [sp, #64]
+ffffffc011471398:	a9037fff 	stp	xzr, xzr, [sp, #48]
+ffffffc01147139c:	54005be3 	b.cc	ffffffc011471f18 <do_ipv6_setsockopt+0xe68>  // b.lo, b.ul, b.last
+ffffffc0114713a0:	394dc268 	ldrb	w8, [x19, #880]
+ffffffc0114713a4:	37084d28 	tbnz	w8, #1, ffffffc011471d48 <do_ipv6_setsockopt+0xc98>
+ffffffc0114713a8:	9100c3e0 	add	x0, sp, #0x30
+ffffffc0114713ac:	52800282 	mov	w2, #0x14                  	// #20
+ffffffc0114713b0:	aa1703e1 	mov	x1, x23
+ffffffc0114713b4:	97b0ba6a 	bl	ffffffc01009fd5c <_copy_from_user>
+ffffffc0114713b8:	b5003160 	cbnz	x0, ffffffc0114719e4 <do_ipv6_setsockopt+0x934>
+ffffffc0114713bc:	b94043e1 	ldr	w1, [sp, #64]
+ffffffc0114713c0:	9100c3e2 	add	x2, sp, #0x30
+ffffffc0114713c4:	aa1303e0 	mov	x0, x19
+ffffffc0114713c8:	7100533f 	cmp	w25, #0x14
+ffffffc0114713cc:	54000721 	b.ne	ffffffc0114714b0 <do_ipv6_setsockopt+0x400>  // b.any
+ffffffc0114713d0:	9407d34a 	bl	ffffffc0116660f8 <__typeid__ZTSFiP4sockiPK8in6_addrE_global_addr>
+ffffffc0114713d4:	2a0003f4 	mov	w20, w0
+ffffffc0114713d8:	1400022b 	b	ffffffc011471c84 <do_ipv6_setsockopt+0xbd4>
+ffffffc0114713dc:	710052df 	cmp	w22, #0x14
+ffffffc0114713e0:	b90043ff 	str	wzr, [sp, #64]
+ffffffc0114713e4:	a9037fff 	stp	xzr, xzr, [sp, #48]
+ffffffc0114713e8:	54005983 	b.cc	ffffffc011471f18 <do_ipv6_setsockopt+0xe68>  // b.lo, b.ul, b.last
+ffffffc0114713ec:	9100c3e0 	add	x0, sp, #0x30
+ffffffc0114713f0:	52800282 	mov	w2, #0x14                  	// #20
+ffffffc0114713f4:	aa1703e1 	mov	x1, x23
+ffffffc0114713f8:	97b0ba59 	bl	ffffffc01009fd5c <_copy_from_user>
+ffffffc0114713fc:	b5002f40 	cbnz	x0, ffffffc0114719e4 <do_ipv6_setsockopt+0x934>
+ffffffc011471400:	b94043e1 	ldr	w1, [sp, #64]
+ffffffc011471404:	9100c3e2 	add	x2, sp, #0x30
+ffffffc011471408:	aa1303e0 	mov	x0, x19
+ffffffc01147140c:	71006f3f 	cmp	w25, #0x1b
+ffffffc011471410:	54005241 	b.ne	ffffffc011471e58 <do_ipv6_setsockopt+0xda8>  // b.any
+ffffffc011471414:	97ff6b53 	bl	ffffffc01144c160 <ipv6_sock_ac_join>
+ffffffc011471418:	2a0003f4 	mov	w20, w0
+ffffffc01147141c:	1400021a 	b	ffffffc011471c84 <do_ipv6_setsockopt+0xbd4>
+ffffffc011471420:	f9402b00 	ldr	x0, [x24, #80]
+ffffffc011471424:	52800181 	mov	w1, #0xc                   	// #12
+ffffffc011471428:	97ba4c8c 	bl	ffffffc010304658 <ns_capable>
+ffffffc01147142c:	36003de0 	tbz	w0, #0, ffffffc011471be8 <do_ipv6_setsockopt+0xb38>
+ffffffc011471430:	aa1303e0 	mov	x0, x19
+ffffffc011471434:	2a1903e1 	mov	w1, w25
+ffffffc011471438:	aa1703e2 	mov	x2, x23
+ffffffc01147143c:	2a1603e3 	mov	w3, w22
+ffffffc011471440:	97ff1bea 	bl	ffffffc0114383e8 <xfrm_user_policy>
+ffffffc011471444:	2a0003f4 	mov	w20, w0
+ffffffc011471448:	1400020f 	b	ffffffc011471c84 <do_ipv6_setsockopt+0xbd4>
+ffffffc01147144c:	710222df 	cmp	w22, #0x88
+ffffffc011471450:	a90affff 	stp	xzr, xzr, [sp, #168]
+ffffffc011471454:	a909ffff 	stp	xzr, xzr, [sp, #152]
+ffffffc011471458:	a908ffff 	stp	xzr, xzr, [sp, #136]
+ffffffc01147145c:	a907ffff 	stp	xzr, xzr, [sp, #120]
+ffffffc011471460:	a906ffff 	stp	xzr, xzr, [sp, #104]
+ffffffc011471464:	a905ffff 	stp	xzr, xzr, [sp, #88]
+ffffffc011471468:	a904ffff 	stp	xzr, xzr, [sp, #72]
+ffffffc01147146c:	a903ffff 	stp	xzr, xzr, [sp, #56]
+ffffffc011471470:	f9001bff 	str	xzr, [sp, #48]
+ffffffc011471474:	54005523 	b.cc	ffffffc011471f18 <do_ipv6_setsockopt+0xe68>  // b.lo, b.ul, b.last
+ffffffc011471478:	9100c3e0 	add	x0, sp, #0x30
+ffffffc01147147c:	52801102 	mov	w2, #0x88                  	// #136
+ffffffc011471480:	aa1703e1 	mov	x1, x23
+ffffffc011471484:	97b0ba36 	bl	ffffffc01009fd5c <_copy_from_user>
+ffffffc011471488:	b5002ae0 	cbnz	x0, ffffffc0114719e4 <do_ipv6_setsockopt+0x934>
+ffffffc01147148c:	794073e8 	ldrh	w8, [sp, #56]
+ffffffc011471490:	7100291f 	cmp	w8, #0xa
+ffffffc011471494:	54004321 	b.ne	ffffffc011471cf8 <do_ipv6_setsockopt+0xc48>  // b.any
+ffffffc011471498:	b94033e1 	ldr	w1, [sp, #48]
+ffffffc01147149c:	9100c3e8 	add	x8, sp, #0x30
+ffffffc0114714a0:	7100ab3f 	cmp	w25, #0x2a
+ffffffc0114714a4:	91004102 	add	x2, x8, #0x10
+ffffffc0114714a8:	aa1303e0 	mov	x0, x19
+ffffffc0114714ac:	54fff920 	b.eq	ffffffc0114713d0 <do_ipv6_setsockopt+0x320>  // b.none
+ffffffc0114714b0:	94003b4d 	bl	ffffffc0114801e4 <ipv6_sock_mc_drop>
+ffffffc0114714b4:	2a0003f4 	mov	w20, w0
+ffffffc0114714b8:	140001f3 	b	ffffffc011471c84 <do_ipv6_setsockopt+0xbd4>
+ffffffc0114714bc:	710012df 	cmp	w22, #0x4
+ffffffc0114714c0:	540052c3 	b.cc	ffffffc011471f18 <do_ipv6_setsockopt+0xe68>  // b.lo, b.ul, b.last
+ffffffc0114714c4:	71000abf 	cmp	w21, #0x2
+ffffffc0114714c8:	54005281 	b.ne	ffffffc011471f18 <do_ipv6_setsockopt+0xe68>  // b.any
+ffffffc0114714cc:	b9422268 	ldr	w8, [x19, #544]
+ffffffc0114714d0:	12103d09 	and	w9, w8, #0xffff0000
+ffffffc0114714d4:	7140c13f 	cmp	w9, #0x30, lsl #12
+ffffffc0114714d8:	540018a0 	b.eq	ffffffc0114717ec <do_ipv6_setsockopt+0x73c>  // b.none
+ffffffc0114714dc:	53083d08 	ubfx	w8, w8, #8, #8
+ffffffc0114714e0:	7100191f 	cmp	w8, #0x6
+ffffffc0114714e4:	540055a0 	b.eq	ffffffc011471f98 <do_ipv6_setsockopt+0xee8>  // b.none
+ffffffc0114714e8:	7102211f 	cmp	w8, #0x88
+ffffffc0114714ec:	54000060 	b.eq	ffffffc0114714f8 <do_ipv6_setsockopt+0x448>  // b.none
+ffffffc0114714f0:	7100451f 	cmp	w8, #0x11
+ffffffc0114714f4:	540017c1 	b.ne	ffffffc0114717ec <do_ipv6_setsockopt+0x73c>  // b.any
+ffffffc0114714f8:	b9441a68 	ldr	w8, [x19, #1048]
+ffffffc0114714fc:	7100291f 	cmp	w8, #0xa
+ffffffc011471500:	54005560 	b.eq	ffffffc011471fac <do_ipv6_setsockopt+0xefc>  // b.none
+ffffffc011471504:	39404a68 	ldrb	w8, [x19, #18]
+ffffffc011471508:	7100051f 	cmp	w8, #0x1
+ffffffc01147150c:	54005da1 	b.ne	ffffffc0114720c0 <do_ipv6_setsockopt+0x1010>  // b.any
+ffffffc011471510:	39404e68 	ldrb	w8, [x19, #19]
+ffffffc011471514:	37283f28 	tbnz	w8, #5, ffffffc011471cf8 <do_ipv6_setsockopt+0xc48>
+ffffffc011471518:	b9404268 	ldr	w8, [x19, #64]
+ffffffc01147151c:	f9401e69 	ldr	x9, [x19, #56]
+ffffffc011471520:	d2703d08 	eor	x8, x8, #0xffff0000
+ffffffc011471524:	aa080128 	orr	x8, x9, x8
+ffffffc011471528:	b5003e88 	cbnz	x8, ffffffc011471cf8 <do_ipv6_setsockopt+0xc48>
+ffffffc01147152c:	aa1303e0 	mov	x0, x19
+ffffffc011471530:	94003c33 	bl	ffffffc0114805fc <__ipv6_sock_mc_close>
+ffffffc011471534:	aa1303e0 	mov	x0, x19
+ffffffc011471538:	97ff6cae 	bl	ffffffc01144c7f0 <__ipv6_sock_ac_close>
+ffffffc01147153c:	39488668 	ldrb	w8, [x19, #545]
+ffffffc011471540:	7100191f 	cmp	w8, #0x6
+ffffffc011471544:	54005d21 	b.ne	ffffffc0114720e8 <do_ipv6_setsockopt+0x1038>  // b.any
+ffffffc011471548:	d5384108 	mrs	x8, sp_el0
+ffffffc01147154c:	b9401909 	ldr	w9, [x8, #24]
+ffffffc011471550:	12800002 	mov	w2, #0xffffffff            	// #-1
+ffffffc011471554:	aa1803e0 	mov	x0, x24
+ffffffc011471558:	11080129 	add	w9, w9, #0x200
+ffffffc01147155c:	b9001909 	str	w9, [x8, #24]
+ffffffc011471560:	f9401661 	ldr	x1, [x19, #40]
+ffffffc011471564:	97fa20c4 	bl	ffffffc0112f9874 <sock_prot_inuse_add>
+ffffffc011471568:	9000b5d4 	adrp	x20, ffffffc012b29000 <nf_ct_sysctl_table+0xac0>
+ffffffc01147156c:	913bc294 	add	x20, x20, #0xef0
+ffffffc011471570:	52800022 	mov	w2, #0x1                   	// #1
+ffffffc011471574:	aa1803e0 	mov	x0, x24
+ffffffc011471578:	aa1403e1 	mov	x1, x20
+ffffffc01147157c:	97fa20be 	bl	ffffffc0112f9874 <sock_prot_inuse_add>
+ffffffc011471580:	97b6957e 	bl	ffffffc010216b78 <local_bh_enable>
+ffffffc011471584:	f9414668 	ldr	x8, [x19, #648]
+ffffffc011471588:	b0007aa9 	adrp	x9, ffffffc0123c6000 <pptp_msg_size+0x8>
+ffffffc01147158c:	9128a129 	add	x9, x9, #0xa28
+ffffffc011471590:	f9027e69 	str	x9, [x19, #1272]
+ffffffc011471594:	d0007aa9 	adrp	x9, ffffffc0123c7000 <ifa_ipv4_policy+0x70>
+ffffffc011471598:	910aa129 	add	x9, x9, #0x2a8
+ffffffc01147159c:	f9001674 	str	x20, [x19, #40]
+ffffffc0114715a0:	f9001109 	str	x9, [x8, #32]
+ffffffc0114715a4:	b944ee61 	ldr	w1, [x19, #1260]
+ffffffc0114715a8:	52800048 	mov	w8, #0x2                   	// #2
+ffffffc0114715ac:	aa1303e0 	mov	x0, x19
+ffffffc0114715b0:	79002268 	strh	w8, [x19, #16]
+ffffffc0114715b4:	97fd81df 	bl	ffffffc0113d1d30 <tcp_sync_mss>
+ffffffc0114715b8:	140002e6 	b	ffffffc011472150 <do_ipv6_setsockopt+0x10a0>
+ffffffc0114715bc:	710012df 	cmp	w22, #0x4
+ffffffc0114715c0:	54004ac3 	b.cc	ffffffc011471f18 <do_ipv6_setsockopt+0xe68>  // b.lo, b.ul, b.last
+ffffffc0114715c4:	79408b68 	ldrh	w8, [x27, #68]
+ffffffc0114715c8:	710002bf 	cmp	w21, #0x0
+ffffffc0114715cc:	1a9f07e9 	cset	w9, ne	// ne = any
+ffffffc0114715d0:	2a1f03f4 	mov	w20, wzr
+ffffffc0114715d4:	121c7908 	and	w8, w8, #0xfffffff7
+ffffffc0114715d8:	2a090d08 	orr	w8, w8, w9, lsl #3
+ffffffc0114715dc:	140001a9 	b	ffffffc011471c80 <do_ipv6_setsockopt+0xbd0>
+ffffffc0114715e0:	710012df 	cmp	w22, #0x4
+ffffffc0114715e4:	540049a3 	b.cc	ffffffc011471f18 <do_ipv6_setsockopt+0xe68>  // b.lo, b.ul, b.last
+ffffffc0114715e8:	79408b68 	ldrh	w8, [x27, #68]
+ffffffc0114715ec:	710002bf 	cmp	w21, #0x0
+ffffffc0114715f0:	1a9f07e9 	cset	w9, ne	// ne = any
+ffffffc0114715f4:	2a1f03f4 	mov	w20, wzr
+ffffffc0114715f8:	12187908 	and	w8, w8, #0xffffff7f
+ffffffc0114715fc:	2a091d08 	orr	w8, w8, w9, lsl #7
+ffffffc011471600:	140001a0 	b	ffffffc011471c80 <do_ipv6_setsockopt+0xbd0>
+ffffffc011471604:	710012df 	cmp	w22, #0x4
+ffffffc011471608:	54004883 	b.cc	ffffffc011471f18 <do_ipv6_setsockopt+0xe68>  // b.lo, b.ul, b.last
+ffffffc01147160c:	79408b68 	ldrh	w8, [x27, #68]
+ffffffc011471610:	710002bf 	cmp	w21, #0x0
+ffffffc011471614:	1a9f07e9 	cset	w9, ne	// ne = any
+ffffffc011471618:	2a1f03f4 	mov	w20, wzr
+ffffffc01147161c:	12167908 	and	w8, w8, #0xfffffdff
+ffffffc011471620:	2a092508 	orr	w8, w8, w9, lsl #9
+ffffffc011471624:	14000197 	b	ffffffc011471c80 <do_ipv6_setsockopt+0xbd0>
+ffffffc011471628:	710012df 	cmp	w22, #0x4
+ffffffc01147162c:	54004763 	b.cc	ffffffc011471f18 <do_ipv6_setsockopt+0xe68>  // b.lo, b.ul, b.last
+ffffffc011471630:	79408b68 	ldrh	w8, [x27, #68]
+ffffffc011471634:	710002bf 	cmp	w21, #0x0
+ffffffc011471638:	1a9f07e9 	cset	w9, ne	// ne = any
+ffffffc01147163c:	2a1f03f4 	mov	w20, wzr
+ffffffc011471640:	121e7908 	and	w8, w8, #0xfffffffd
+ffffffc011471644:	2a090508 	orr	w8, w8, w9, lsl #1
+ffffffc011471648:	1400018e 	b	ffffffc011471c80 <do_ipv6_setsockopt+0xbd0>
+ffffffc01147164c:	d101a3a0 	sub	x0, x29, #0x68
+ffffffc011471650:	52800b02 	mov	w2, #0x58                  	// #88
+ffffffc011471654:	2a1f03e1 	mov	w1, wzr
+ffffffc011471658:	a907ffff 	stp	xzr, xzr, [sp, #120]
+ffffffc01147165c:	a906ffff 	stp	xzr, xzr, [sp, #104]
+ffffffc011471660:	a905ffff 	stp	xzr, xzr, [sp, #88]
+ffffffc011471664:	a904ffff 	stp	xzr, xzr, [sp, #72]
+ffffffc011471668:	a903ffff 	stp	xzr, xzr, [sp, #56]
+ffffffc01147166c:	a902ffff 	stp	xzr, xzr, [sp, #40]
+ffffffc011471670:	a93e7fbf 	stp	xzr, xzr, [x29, #-32]
+ffffffc011471674:	a93d7fbf 	stp	xzr, xzr, [x29, #-48]
+ffffffc011471678:	a93c7fbf 	stp	xzr, xzr, [x29, #-64]
+ffffffc01147167c:	a93b7fbf 	stp	xzr, xzr, [x29, #-80]
+ffffffc011471680:	a93a7fbf 	stp	xzr, xzr, [x29, #-96]
+ffffffc011471684:	f81983bf 	stur	xzr, [x29, #-104]
+ffffffc011471688:	a901ffff 	stp	xzr, xzr, [sp, #24]
+ffffffc01147168c:	a900ffff 	stp	xzr, xzr, [sp, #8]
+ffffffc011471690:	97b06d3c 	bl	ffffffc01008cb80 <__memset>
+ffffffc011471694:	b9401668 	ldr	w8, [x19, #20]
+ffffffc011471698:	b81983a8 	stur	w8, [x29, #-104]
+ffffffc01147169c:	b941d668 	ldr	w8, [x19, #468]
+ffffffc0114716a0:	b81a03a8 	stur	w8, [x29, #-96]
+ffffffc0114716a4:	34003736 	cbz	w22, ffffffc011471d88 <do_ipv6_setsockopt+0xcd8>
+ffffffc0114716a8:	714042df 	cmp	w22, #0x10, lsl #12
+ffffffc0114716ac:	54002da8 	b.hi	ffffffc011471c60 <do_ipv6_setsockopt+0xbb0>  // b.pmore
+ffffffc0114716b0:	110102d9 	add	w25, w22, #0x40
+ffffffc0114716b4:	52819802 	mov	w2, #0xcc0                 	// #3264
+ffffffc0114716b8:	aa1303e0 	mov	x0, x19
+ffffffc0114716bc:	2a1903e1 	mov	w1, w25
+ffffffc0114716c0:	97fa185f 	bl	ffffffc0112f783c <sock_kmalloc>
+ffffffc0114716c4:	b4001660 	cbz	x0, ffffffc011471990 <do_ipv6_setsockopt+0x8e0>
+ffffffc0114716c8:	52800802 	mov	w2, #0x40                  	// #64
+ffffffc0114716cc:	2a1f03e1 	mov	w1, wzr
+ffffffc0114716d0:	aa0003f5 	mov	x21, x0
+ffffffc0114716d4:	2a1603f4 	mov	w20, w22
+ffffffc0114716d8:	97b06d2a 	bl	ffffffc01008cb80 <__memset>
+ffffffc0114716dc:	910102b6 	add	x22, x21, #0x40
+ffffffc0114716e0:	52800028 	mov	w8, #0x1                   	// #1
+ffffffc0114716e4:	aa1603e0 	mov	x0, x22
+ffffffc0114716e8:	aa1403e1 	mov	x1, x20
+ffffffc0114716ec:	2a1f03e2 	mov	w2, wzr
+ffffffc0114716f0:	b90002a8 	str	w8, [x21]
+ffffffc0114716f4:	b90006b9 	str	w25, [x21, #4]
+ffffffc0114716f8:	97c29e61 	bl	ffffffc01051907c <__check_object_size>
+ffffffc0114716fc:	aa1603e0 	mov	x0, x22
+ffffffc011471700:	aa1703e1 	mov	x1, x23
+ffffffc011471704:	aa1403e2 	mov	x2, x20
+ffffffc011471708:	97b0b995 	bl	ffffffc01009fd5c <_copy_from_user>
+ffffffc01147170c:	b4004300 	cbz	x0, ffffffc011471f6c <do_ipv6_setsockopt+0xebc>
+ffffffc011471710:	128001b4 	mov	w20, #0xfffffff2            	// #-14
+ffffffc011471714:	140001a3 	b	ffffffc011471da0 <do_ipv6_setsockopt+0xcf0>
+ffffffc011471718:	710012df 	cmp	w22, #0x4
+ffffffc01147171c:	54003fe3 	b.cc	ffffffc011471f18 <do_ipv6_setsockopt+0xe68>  // b.lo, b.ul, b.last
+ffffffc011471720:	79408b68 	ldrh	w8, [x27, #68]
+ffffffc011471724:	710002bf 	cmp	w21, #0x0
+ffffffc011471728:	1a9f07e9 	cset	w9, ne	// ne = any
+ffffffc01147172c:	2a1f03f4 	mov	w20, wzr
+ffffffc011471730:	121a7908 	and	w8, w8, #0xffffffdf
+ffffffc011471734:	2a091508 	orr	w8, w8, w9, lsl #5
+ffffffc011471738:	14000152 	b	ffffffc011471c80 <do_ipv6_setsockopt+0xbd0>
+ffffffc01147173c:	710012df 	cmp	w22, #0x4
+ffffffc011471740:	54003ec3 	b.cc	ffffffc011471f18 <do_ipv6_setsockopt+0xe68>  // b.lo, b.ul, b.last
+ffffffc011471744:	79408b68 	ldrh	w8, [x27, #68]
+ffffffc011471748:	710002bf 	cmp	w21, #0x0
+ffffffc01147174c:	1a9f07e9 	cset	w9, ne	// ne = any
+ffffffc011471750:	2a1f03f4 	mov	w20, wzr
+ffffffc011471754:	12157908 	and	w8, w8, #0xfffffbff
+ffffffc011471758:	2a092908 	orr	w8, w8, w9, lsl #10
+ffffffc01147175c:	14000149 	b	ffffffc011471c80 <do_ipv6_setsockopt+0xbd0>
+ffffffc011471760:	710012df 	cmp	w22, #0x4
+ffffffc011471764:	54003da3 	b.cc	ffffffc011471f18 <do_ipv6_setsockopt+0xe68>  // b.lo, b.ul, b.last
+ffffffc011471768:	110006a8 	add	w8, w21, #0x1
+ffffffc01147176c:	7104011f 	cmp	w8, #0x100
+ffffffc011471770:	54003d48 	b.hi	ffffffc011471f18 <do_ipv6_setsockopt+0xe68>  // b.pmore
+ffffffc011471774:	b9403b68 	ldr	w8, [x27, #56]
+ffffffc011471778:	2a1f03f4 	mov	w20, wzr
+ffffffc01147177c:	331922a8 	bfi	w8, w21, #7, #9
+ffffffc011471780:	b9003b68 	str	w8, [x27, #56]
+ffffffc011471784:	14000140 	b	ffffffc011471c84 <do_ipv6_setsockopt+0xbd4>
+ffffffc011471788:	79444668 	ldrh	w8, [x19, #546]
+ffffffc01147178c:	53103d08 	lsl	w8, w8, #16
+ffffffc011471790:	7140411f 	cmp	w8, #0x10, lsl #12
+ffffffc011471794:	540002c0 	b.eq	ffffffc0114717ec <do_ipv6_setsockopt+0x73c>  // b.none
+ffffffc011471798:	710012df 	cmp	w22, #0x4
+ffffffc01147179c:	54003be3 	b.cc	ffffffc011471f18 <do_ipv6_setsockopt+0xe68>  // b.lo, b.ul, b.last
+ffffffc0114717a0:	34000195 	cbz	w21, ffffffc0114717d0 <do_ipv6_setsockopt+0x720>
+ffffffc0114717a4:	97bca289 	bl	ffffffc01039a1c8 <__rcu_read_lock>
+ffffffc0114717a8:	aa1803e0 	mov	x0, x24
+ffffffc0114717ac:	2a1503e1 	mov	w1, w21
+ffffffc0114717b0:	97fa7cd6 	bl	ffffffc011310b08 <dev_get_by_index_rcu>
+ffffffc0114717b4:	aa0003f4 	mov	x20, x0
+ffffffc0114717b8:	97bca289 	bl	ffffffc01039a1dc <__rcu_read_unlock>
+ffffffc0114717bc:	b4004054 	cbz	x20, ffffffc011471fc4 <do_ipv6_setsockopt+0xf14>
+ffffffc0114717c0:	b9401668 	ldr	w8, [x19, #20]
+ffffffc0114717c4:	34000068 	cbz	w8, ffffffc0114717d0 <do_ipv6_setsockopt+0x720>
+ffffffc0114717c8:	6b15011f 	cmp	w8, w21
+ffffffc0114717cc:	54003a61 	b.ne	ffffffc011471f18 <do_ipv6_setsockopt+0xe68>  // b.any
+ffffffc0114717d0:	2a1f03f4 	mov	w20, wzr
+ffffffc0114717d4:	b9004375 	str	w21, [x27, #64]
+ffffffc0114717d8:	1400012b 	b	ffffffc011471c84 <do_ipv6_setsockopt+0xbd4>
+ffffffc0114717dc:	79444668 	ldrh	w8, [x19, #546]
+ffffffc0114717e0:	53103d08 	lsl	w8, w8, #16
+ffffffc0114717e4:	7140411f 	cmp	w8, #0x10, lsl #12
+ffffffc0114717e8:	54002b41 	b.ne	ffffffc011471d50 <do_ipv6_setsockopt+0xca0>  // b.any
+ffffffc0114717ec:	12800b74 	mov	w20, #0xffffffa4            	// #-92
+ffffffc0114717f0:	14000125 	b	ffffffc011471c84 <do_ipv6_setsockopt+0xbd4>
+ffffffc0114717f4:	710012df 	cmp	w22, #0x4
+ffffffc0114717f8:	54003903 	b.cc	ffffffc011471f18 <do_ipv6_setsockopt+0xe68>  // b.lo, b.ul, b.last
+ffffffc0114717fc:	6b1a02bf 	cmp	w21, w26
+ffffffc011471800:	540038c1 	b.ne	ffffffc011471f18 <do_ipv6_setsockopt+0xe68>  // b.any
+ffffffc011471804:	b9403b68 	ldr	w8, [x27, #56]
+ffffffc011471808:	710002bf 	cmp	w21, #0x0
+ffffffc01147180c:	1a9f07e9 	cset	w9, ne	// ne = any
+ffffffc011471810:	2a1f03f4 	mov	w20, wzr
+ffffffc011471814:	33100128 	bfi	w8, w9, #16, #1
+ffffffc011471818:	b9003b68 	str	w8, [x27, #56]
+ffffffc01147181c:	1400011a 	b	ffffffc011471c84 <do_ipv6_setsockopt+0xbd4>
+ffffffc011471820:	710012df 	cmp	w22, #0x4
+ffffffc011471824:	540037a3 	b.cc	ffffffc011471f18 <do_ipv6_setsockopt+0xe68>  // b.lo, b.ul, b.last
+ffffffc011471828:	aa1303e0 	mov	x0, x19
+ffffffc01147182c:	2a1503e1 	mov	w1, w21
+ffffffc011471830:	97fffd1f 	bl	ffffffc011470cac <ip6_ra_control>
+ffffffc011471834:	2a0003f4 	mov	w20, w0
+ffffffc011471838:	14000113 	b	ffffffc011471c84 <do_ipv6_setsockopt+0xbd4>
+ffffffc01147183c:	710012df 	cmp	w22, #0x4
+ffffffc011471840:	540036c3 	b.cc	ffffffc011471f18 <do_ipv6_setsockopt+0xe68>  // b.lo, b.ul, b.last
+ffffffc011471844:	710016bf 	cmp	w21, #0x5
+ffffffc011471848:	54003688 	b.hi	ffffffc011471f18 <do_ipv6_setsockopt+0xe68>  // b.pmore
+ffffffc01147184c:	79408f68 	ldrh	w8, [x27, #70]
+ffffffc011471850:	2a1f03f4 	mov	w20, wzr
+ffffffc011471854:	531d0aa9 	ubfiz	w9, w21, #3, #3
+ffffffc011471858:	121a7108 	and	w8, w8, #0xffffffc7
+ffffffc01147185c:	140000b3 	b	ffffffc011471b28 <do_ipv6_setsockopt+0xa78>
+ffffffc011471860:	710002bf 	cmp	w21, #0x0
+ffffffc011471864:	1a9f07e8 	cset	w8, ne	// ne = any
+ffffffc011471868:	711402bf 	cmp	w21, #0x500
+ffffffc01147186c:	1a9fa7e9 	cset	w9, lt	// lt = tstop
+ffffffc011471870:	710012df 	cmp	w22, #0x4
+ffffffc011471874:	54003523 	b.cc	ffffffc011471f18 <do_ipv6_setsockopt+0xe68>  // b.lo, b.ul, b.last
+ffffffc011471878:	0a090108 	and	w8, w8, w9
+ffffffc01147187c:	370034e8 	tbnz	w8, #0, ffffffc011471f18 <do_ipv6_setsockopt+0xe68>
+ffffffc011471880:	2a1f03f4 	mov	w20, wzr
+ffffffc011471884:	b9003775 	str	w21, [x27, #52]
+ffffffc011471888:	140000ff 	b	ffffffc011471c84 <do_ipv6_setsockopt+0xbd4>
+ffffffc01147188c:	710012df 	cmp	w22, #0x4
+ffffffc011471890:	54003443 	b.cc	ffffffc011471f18 <do_ipv6_setsockopt+0xe68>  // b.lo, b.ul, b.last
+ffffffc011471894:	79408f68 	ldrh	w8, [x27, #70]
+ffffffc011471898:	710002bf 	cmp	w21, #0x0
+ffffffc01147189c:	1a9f07e9 	cset	w9, ne	// ne = any
+ffffffc0114718a0:	121f3908 	and	w8, w8, #0xfffe
+ffffffc0114718a4:	2a090108 	orr	w8, w8, w9
+ffffffc0114718a8:	79008f68 	strh	w8, [x27, #70]
+ffffffc0114718ac:	34002dd5 	cbz	w21, ffffffc011471e64 <do_ipv6_setsockopt+0xdb4>
+ffffffc0114718b0:	2a1f03f4 	mov	w20, wzr
+ffffffc0114718b4:	140000f4 	b	ffffffc011471c84 <do_ipv6_setsockopt+0xbd4>
+ffffffc0114718b8:	710012df 	cmp	w22, #0x4
+ffffffc0114718bc:	540032e3 	b.cc	ffffffc011471f18 <do_ipv6_setsockopt+0xe68>  // b.lo, b.ul, b.last
+ffffffc0114718c0:	79401e68 	ldrh	w8, [x19, #14]
+ffffffc0114718c4:	350032a8 	cbnz	w8, ffffffc011471f18 <do_ipv6_setsockopt+0xe68>
+ffffffc0114718c8:	39404e68 	ldrb	w8, [x19, #19]
+ffffffc0114718cc:	710002bf 	cmp	w21, #0x0
+ffffffc0114718d0:	1a9f07e9 	cset	w9, ne	// ne = any
+ffffffc0114718d4:	2a1f03f4 	mov	w20, wzr
+ffffffc0114718d8:	121a7908 	and	w8, w8, #0xffffffdf
+ffffffc0114718dc:	2a091508 	orr	w8, w8, w9, lsl #5
+ffffffc0114718e0:	39004e68 	strb	w8, [x19, #19]
+ffffffc0114718e4:	140000e8 	b	ffffffc011471c84 <do_ipv6_setsockopt+0xbd4>
+ffffffc0114718e8:	710012df 	cmp	w22, #0x4
+ffffffc0114718ec:	54003163 	b.cc	ffffffc011471f18 <do_ipv6_setsockopt+0xe68>  // b.lo, b.ul, b.last
+ffffffc0114718f0:	79408f68 	ldrh	w8, [x27, #70]
+ffffffc0114718f4:	710002bf 	cmp	w21, #0x0
+ffffffc0114718f8:	1a9f07e9 	cset	w9, ne	// ne = any
+ffffffc0114718fc:	2a1f03f4 	mov	w20, wzr
+ffffffc011471900:	12127908 	and	w8, w8, #0xffffdfff
+ffffffc011471904:	2a093508 	orr	w8, w8, w9, lsl #13
+ffffffc011471908:	79008f68 	strh	w8, [x27, #70]
+ffffffc01147190c:	140000de 	b	ffffffc011471c84 <do_ipv6_setsockopt+0xbd4>
+ffffffc011471910:	710012df 	cmp	w22, #0x4
+ffffffc011471914:	54003023 	b.cc	ffffffc011471f18 <do_ipv6_setsockopt+0xe68>  // b.lo, b.ul, b.last
+ffffffc011471918:	79408f68 	ldrh	w8, [x27, #70]
+ffffffc01147191c:	710002bf 	cmp	w21, #0x0
+ffffffc011471920:	1a9f07e9 	cset	w9, ne	// ne = any
+ffffffc011471924:	2a1f03f4 	mov	w20, wzr
+ffffffc011471928:	12117908 	and	w8, w8, #0xffffbfff
+ffffffc01147192c:	2a093908 	orr	w8, w8, w9, lsl #14
+ffffffc011471930:	79008f68 	strh	w8, [x27, #70]
+ffffffc011471934:	140000d4 	b	ffffffc011471c84 <do_ipv6_setsockopt+0xbd4>
+ffffffc011471938:	aa1303e0 	mov	x0, x19
+ffffffc01147193c:	aa1703e1 	mov	x1, x23
+ffffffc011471940:	2a1603e2 	mov	w2, w22
+ffffffc011471944:	9400734c 	bl	ffffffc01148e674 <ipv6_flowlabel_opt>
+ffffffc011471948:	2a0003f4 	mov	w20, w0
+ffffffc01147194c:	140000ce 	b	ffffffc011471c84 <do_ipv6_setsockopt+0xbd4>
+ffffffc011471950:	710012df 	cmp	w22, #0x4
+ffffffc011471954:	54002e23 	b.cc	ffffffc011471f18 <do_ipv6_setsockopt+0xe68>  // b.lo, b.ul, b.last
+ffffffc011471958:	79408f68 	ldrh	w8, [x27, #70]
+ffffffc01147195c:	710002bf 	cmp	w21, #0x0
+ffffffc011471960:	1a9f07e9 	cset	w9, ne	// ne = any
+ffffffc011471964:	2a1f03f4 	mov	w20, wzr
+ffffffc011471968:	121e7908 	and	w8, w8, #0xfffffffd
+ffffffc01147196c:	2a090508 	orr	w8, w8, w9, lsl #1
+ffffffc011471970:	79008f68 	strh	w8, [x27, #70]
+ffffffc011471974:	140000c4 	b	ffffffc011471c84 <do_ipv6_setsockopt+0xbd4>
+ffffffc011471978:	710242df 	cmp	w22, #0x90
+ffffffc01147197c:	54002ce3 	b.cc	ffffffc011471f18 <do_ipv6_setsockopt+0xe68>  // b.lo, b.ul, b.last
+ffffffc011471980:	b000a808 	adrp	x8, ffffffc012972000 <sec_kn_acceptable_event+0xad4>
+ffffffc011471984:	b9432908 	ldr	w8, [x8, #808]
+ffffffc011471988:	6b16011f 	cmp	w8, w22
+ffffffc01147198c:	540022e2 	b.cs	ffffffc011471de8 <do_ipv6_setsockopt+0xd38>  // b.hs, b.nlast
+ffffffc011471990:	12800d14 	mov	w20, #0xffffff97            	// #-105
+ffffffc011471994:	140000bc 	b	ffffffc011471c84 <do_ipv6_setsockopt+0xbd4>
+ffffffc011471998:	710012df 	cmp	w22, #0x4
+ffffffc01147199c:	54002be3 	b.cc	ffffffc011471f18 <do_ipv6_setsockopt+0xe68>  // b.lo, b.ul, b.last
+ffffffc0114719a0:	79408b68 	ldrh	w8, [x27, #68]
+ffffffc0114719a4:	710002bf 	cmp	w21, #0x0
+ffffffc0114719a8:	1a9f07e9 	cset	w9, ne	// ne = any
+ffffffc0114719ac:	2a1f03f4 	mov	w20, wzr
+ffffffc0114719b0:	121d7908 	and	w8, w8, #0xfffffffb
+ffffffc0114719b4:	2a090908 	orr	w8, w8, w9, lsl #2
+ffffffc0114719b8:	140000b2 	b	ffffffc011471c80 <do_ipv6_setsockopt+0xbd0>
+ffffffc0114719bc:	b90043ff 	str	wzr, [sp, #64]
+ffffffc0114719c0:	a9037fff 	stp	xzr, xzr, [sp, #48]
+ffffffc0114719c4:	b4002ab7 	cbz	x23, ffffffc011471f18 <do_ipv6_setsockopt+0xe68>
+ffffffc0114719c8:	710052df 	cmp	w22, #0x14
+ffffffc0114719cc:	54002a63 	b.cc	ffffffc011471f18 <do_ipv6_setsockopt+0xe68>  // b.lo, b.ul, b.last
+ffffffc0114719d0:	9100c3e0 	add	x0, sp, #0x30
+ffffffc0114719d4:	52800282 	mov	w2, #0x14                  	// #20
+ffffffc0114719d8:	aa1703e1 	mov	x1, x23
+ffffffc0114719dc:	97b0b8e0 	bl	ffffffc01009fd5c <_copy_from_user>
+ffffffc0114719e0:	b40024a0 	cbz	x0, ffffffc011471e74 <do_ipv6_setsockopt+0xdc4>
+ffffffc0114719e4:	128001b4 	mov	w20, #0xfffffff2            	// #-14
+ffffffc0114719e8:	140000a7 	b	ffffffc011471c84 <do_ipv6_setsockopt+0xbd4>
+ffffffc0114719ec:	710012df 	cmp	w22, #0x4
+ffffffc0114719f0:	54002943 	b.cc	ffffffc011471f18 <do_ipv6_setsockopt+0xe68>  // b.lo, b.ul, b.last
+ffffffc0114719f4:	79408b68 	ldrh	w8, [x27, #68]
+ffffffc0114719f8:	710002bf 	cmp	w21, #0x0
+ffffffc0114719fc:	1a9f07e9 	cset	w9, ne	// ne = any
+ffffffc011471a00:	2a1f03f4 	mov	w20, wzr
+ffffffc011471a04:	121b7908 	and	w8, w8, #0xffffffef
+ffffffc011471a08:	2a091108 	orr	w8, w8, w9, lsl #4
+ffffffc011471a0c:	1400009d 	b	ffffffc011471c80 <do_ipv6_setsockopt+0xbd0>
+ffffffc011471a10:	710012df 	cmp	w22, #0x4
+ffffffc011471a14:	54002823 	b.cc	ffffffc011471f18 <do_ipv6_setsockopt+0xe68>  // b.lo, b.ul, b.last
+ffffffc011471a18:	79408b68 	ldrh	w8, [x27, #68]
+ffffffc011471a1c:	710002bf 	cmp	w21, #0x0
+ffffffc011471a20:	1a9f07e9 	cset	w9, ne	// ne = any
+ffffffc011471a24:	2a1f03f4 	mov	w20, wzr
+ffffffc011471a28:	12197908 	and	w8, w8, #0xffffffbf
+ffffffc011471a2c:	2a091908 	orr	w8, w8, w9, lsl #6
+ffffffc011471a30:	14000094 	b	ffffffc011471c80 <do_ipv6_setsockopt+0xbd0>
+ffffffc011471a34:	710012df 	cmp	w22, #0x4
+ffffffc011471a38:	54002703 	b.cc	ffffffc011471f18 <do_ipv6_setsockopt+0xe68>  // b.lo, b.ul, b.last
+ffffffc011471a3c:	79408b68 	ldrh	w8, [x27, #68]
+ffffffc011471a40:	710002bf 	cmp	w21, #0x0
+ffffffc011471a44:	1a9f07e9 	cset	w9, ne	// ne = any
+ffffffc011471a48:	2a1f03f4 	mov	w20, wzr
+ffffffc011471a4c:	121f3908 	and	w8, w8, #0xfffe
+ffffffc011471a50:	2a090108 	orr	w8, w8, w9
+ffffffc011471a54:	1400008b 	b	ffffffc011471c80 <do_ipv6_setsockopt+0xbd0>
+ffffffc011471a58:	710012df 	cmp	w22, #0x4
+ffffffc011471a5c:	540025e3 	b.cc	ffffffc011471f18 <do_ipv6_setsockopt+0xe68>  // b.lo, b.ul, b.last
+ffffffc011471a60:	79408b68 	ldrh	w8, [x27, #68]
+ffffffc011471a64:	710002bf 	cmp	w21, #0x0
+ffffffc011471a68:	1a9f07e9 	cset	w9, ne	// ne = any
+ffffffc011471a6c:	2a1f03f4 	mov	w20, wzr
+ffffffc011471a70:	12177908 	and	w8, w8, #0xfffffeff
+ffffffc011471a74:	2a092108 	orr	w8, w8, w9, lsl #8
+ffffffc011471a78:	14000082 	b	ffffffc011471c80 <do_ipv6_setsockopt+0xbd0>
+ffffffc011471a7c:	710012df 	cmp	w22, #0x4
+ffffffc011471a80:	540024c3 	b.cc	ffffffc011471f18 <do_ipv6_setsockopt+0xe68>  // b.lo, b.ul, b.last
+ffffffc011471a84:	79408b68 	ldrh	w8, [x27, #68]
+ffffffc011471a88:	710002bf 	cmp	w21, #0x0
+ffffffc011471a8c:	1a9f07e9 	cset	w9, ne	// ne = any
+ffffffc011471a90:	2a1f03f4 	mov	w20, wzr
+ffffffc011471a94:	12137908 	and	w8, w8, #0xffffefff
+ffffffc011471a98:	2a093108 	orr	w8, w8, w9, lsl #12
+ffffffc011471a9c:	14000079 	b	ffffffc011471c80 <do_ipv6_setsockopt+0xbd0>
+ffffffc011471aa0:	79408f68 	ldrh	w8, [x27, #70]
+ffffffc011471aa4:	710002bf 	cmp	w21, #0x0
+ffffffc011471aa8:	1a9f07e9 	cset	w9, ne	// ne = any
+ffffffc011471aac:	2a1f03f4 	mov	w20, wzr
+ffffffc011471ab0:	12157908 	and	w8, w8, #0xfffffbff
+ffffffc011471ab4:	2a092908 	orr	w8, w8, w9, lsl #10
+ffffffc011471ab8:	79008f68 	strh	w8, [x27, #70]
+ffffffc011471abc:	14000072 	b	ffffffc011471c84 <do_ipv6_setsockopt+0xbd4>
+ffffffc011471ac0:	710012df 	cmp	w22, #0x4
+ffffffc011471ac4:	540022a3 	b.cc	ffffffc011471f18 <do_ipv6_setsockopt+0xe68>  // b.lo, b.ul, b.last
+ffffffc011471ac8:	79408b68 	ldrh	w8, [x27, #68]
+ffffffc011471acc:	710002bf 	cmp	w21, #0x0
+ffffffc011471ad0:	1a9f07e9 	cset	w9, ne	// ne = any
+ffffffc011471ad4:	2a1f03f4 	mov	w20, wzr
+ffffffc011471ad8:	12147908 	and	w8, w8, #0xfffff7ff
+ffffffc011471adc:	2a092d08 	orr	w8, w8, w9, lsl #11
+ffffffc011471ae0:	14000068 	b	ffffffc011471c80 <do_ipv6_setsockopt+0xbd0>
+ffffffc011471ae4:	710012df 	cmp	w22, #0x4
+ffffffc011471ae8:	54002183 	b.cc	ffffffc011471f18 <do_ipv6_setsockopt+0xe68>  // b.lo, b.ul, b.last
+ffffffc011471aec:	110006a8 	add	w8, w21, #0x1
+ffffffc011471af0:	7104011f 	cmp	w8, #0x100
+ffffffc011471af4:	54002128 	b.hi	ffffffc011471f18 <do_ipv6_setsockopt+0xe68>  // b.pmore
+ffffffc011471af8:	310006bf 	cmn	w21, #0x1
+ffffffc011471afc:	1a9503e8 	csel	w8, wzr, w21, eq	// eq = none
+ffffffc011471b00:	2a1f03f4 	mov	w20, wzr
+ffffffc011471b04:	39012768 	strb	w8, [x27, #73]
+ffffffc011471b08:	1400005f 	b	ffffffc011471c84 <do_ipv6_setsockopt+0xbd4>
+ffffffc011471b0c:	79408f68 	ldrh	w8, [x27, #70]
+ffffffc011471b10:	710002bf 	cmp	w21, #0x0
+ffffffc011471b14:	52820009 	mov	w9, #0x1000                	// #4096
+ffffffc011471b18:	5283000a 	mov	w10, #0x1800                	// #6144
+ffffffc011471b1c:	2a1f03f4 	mov	w20, wzr
+ffffffc011471b20:	12137508 	and	w8, w8, #0xffffe7ff
+ffffffc011471b24:	1a891149 	csel	w9, w10, w9, ne	// ne = any
+ffffffc011471b28:	2a090108 	orr	w8, w8, w9
+ffffffc011471b2c:	79008f68 	strh	w8, [x27, #70]
+ffffffc011471b30:	14000055 	b	ffffffc011471c84 <do_ipv6_setsockopt+0xbd4>
+ffffffc011471b34:	710012df 	cmp	w22, #0x4
+ffffffc011471b38:	54001f03 	b.cc	ffffffc011471f18 <do_ipv6_setsockopt+0xe68>  // b.lo, b.ul, b.last
+ffffffc011471b3c:	52802068 	mov	w8, #0x103                 	// #259
+ffffffc011471b40:	0a0802a8 	and	w8, w21, w8
+ffffffc011471b44:	7100051f 	cmp	w8, #0x1
+ffffffc011471b48:	540017ec 	b.gt	ffffffc011471e44 <do_ipv6_setsockopt+0xd94>
+ffffffc011471b4c:	34001ae8 	cbz	w8, ffffffc011471ea8 <do_ipv6_setsockopt+0xdf8>
+ffffffc011471b50:	7100051f 	cmp	w8, #0x1
+ffffffc011471b54:	54001b00 	b.eq	ffffffc011471eb4 <do_ipv6_setsockopt+0xe04>  // b.none
+ffffffc011471b58:	140000f0 	b	ffffffc011471f18 <do_ipv6_setsockopt+0xe68>
+ffffffc011471b5c:	710012df 	cmp	w22, #0x4
+ffffffc011471b60:	54001dc3 	b.cc	ffffffc011471f18 <do_ipv6_setsockopt+0xe68>  // b.lo, b.ul, b.last
+ffffffc011471b64:	7103febf 	cmp	w21, #0xff
+ffffffc011471b68:	54001d88 	b.hi	ffffffc011471f18 <do_ipv6_setsockopt+0xe68>  // b.pmore
+ffffffc011471b6c:	2a1f03f4 	mov	w20, wzr
+ffffffc011471b70:	39012375 	strb	w21, [x27, #72]
+ffffffc011471b74:	14000044 	b	ffffffc011471c84 <do_ipv6_setsockopt+0xbd4>
+ffffffc011471b78:	710012df 	cmp	w22, #0x4
+ffffffc011471b7c:	54001ce3 	b.cc	ffffffc011471f18 <do_ipv6_setsockopt+0xe68>  // b.lo, b.ul, b.last
+ffffffc011471b80:	79408b68 	ldrh	w8, [x27, #68]
+ffffffc011471b84:	710002bf 	cmp	w21, #0x0
+ffffffc011471b88:	1a9f07e9 	cset	w9, ne	// ne = any
+ffffffc011471b8c:	2a1f03f4 	mov	w20, wzr
+ffffffc011471b90:	12127908 	and	w8, w8, #0xffffdfff
+ffffffc011471b94:	2a093508 	orr	w8, w8, w9, lsl #13
+ffffffc011471b98:	1400003a 	b	ffffffc011471c80 <do_ipv6_setsockopt+0xbd0>
+ffffffc011471b9c:	34000135 	cbz	w21, ffffffc011471bc0 <do_ipv6_setsockopt+0xb10>
+ffffffc011471ba0:	f9402b00 	ldr	x0, [x24, #80]
+ffffffc011471ba4:	528001a1 	mov	w1, #0xd                   	// #13
+ffffffc011471ba8:	97ba4aac 	bl	ffffffc010304658 <ns_capable>
+ffffffc011471bac:	370000a0 	tbnz	w0, #0, ffffffc011471bc0 <do_ipv6_setsockopt+0xb10>
+ffffffc011471bb0:	f9402b00 	ldr	x0, [x24, #80]
+ffffffc011471bb4:	52800181 	mov	w1, #0xc                   	// #12
+ffffffc011471bb8:	97ba4aa8 	bl	ffffffc010304658 <ns_capable>
+ffffffc011471bbc:	36000160 	tbz	w0, #0, ffffffc011471be8 <do_ipv6_setsockopt+0xb38>
+ffffffc011471bc0:	710012df 	cmp	w22, #0x4
+ffffffc011471bc4:	54001aa3 	b.cc	ffffffc011471f18 <do_ipv6_setsockopt+0xe68>  // b.lo, b.ul, b.last
+ffffffc011471bc8:	7946e268 	ldrh	w8, [x19, #880]
+ffffffc011471bcc:	710002bf 	cmp	w21, #0x0
+ffffffc011471bd0:	1a9f07e9 	cset	w9, ne	// ne = any
+ffffffc011471bd4:	2a1f03f4 	mov	w20, wzr
+ffffffc011471bd8:	121a7908 	and	w8, w8, #0xffffffdf
+ffffffc011471bdc:	2a091508 	orr	w8, w8, w9, lsl #5
+ffffffc011471be0:	7906e268 	strh	w8, [x19, #880]
+ffffffc011471be4:	14000028 	b	ffffffc011471c84 <do_ipv6_setsockopt+0xbd4>
+ffffffc011471be8:	12800014 	mov	w20, #0xffffffff            	// #-1
+ffffffc011471bec:	14000026 	b	ffffffc011471c84 <do_ipv6_setsockopt+0xbd4>
+ffffffc011471bf0:	710012df 	cmp	w22, #0x4
+ffffffc011471bf4:	54001921 	b.ne	ffffffc011471f18 <do_ipv6_setsockopt+0xe68>  // b.any
+ffffffc011471bf8:	34001535 	cbz	w21, ffffffc011471e9c <do_ipv6_setsockopt+0xdec>
+ffffffc011471bfc:	5ac00ab5 	rev	w21, w21
+ffffffc011471c00:	aa1803e0 	mov	x0, x24
+ffffffc011471c04:	2a1503e1 	mov	w1, w21
+ffffffc011471c08:	97fa7bd2 	bl	ffffffc011310b50 <dev_get_by_index>
+ffffffc011471c0c:	b4000760 	cbz	x0, ffffffc011471cf8 <do_ipv6_setsockopt+0xc48>
+ffffffc011471c10:	d5384108 	mrs	x8, sp_el0
+ffffffc011471c14:	b9401909 	ldr	w9, [x8, #24]
+ffffffc011471c18:	11000529 	add	w9, w9, #0x1
+ffffffc011471c1c:	b9001909 	str	w9, [x8, #24]
+ffffffc011471c20:	f9423c09 	ldr	x9, [x0, #1144]
+ffffffc011471c24:	d538d08a 	mrs	x10, tpidr_el1
+ffffffc011471c28:	8b090149 	add	x9, x10, x9
+ffffffc011471c2c:	1280000a 	mov	w10, #0xffffffff            	// #-1
+ffffffc011471c30:	885f7d2c 	ldxr	w12, [x9]
+ffffffc011471c34:	0b0a018c 	add	w12, w12, w10
+ffffffc011471c38:	880b7d2c 	stxr	w11, w12, [x9]
+ffffffc011471c3c:	35ffffab 	cbnz	w11, ffffffc011471c30 <do_ipv6_setsockopt+0xb80>
+ffffffc011471c40:	f9400d09 	ldr	x9, [x8, #24]
+ffffffc011471c44:	f1000529 	subs	x9, x9, #0x1
+ffffffc011471c48:	b9001909 	str	w9, [x8, #24]
+ffffffc011471c4c:	54002900 	b.eq	ffffffc01147216c <do_ipv6_setsockopt+0x10bc>  // b.none
+ffffffc011471c50:	f9400d08 	ldr	x8, [x8, #24]
+ffffffc011471c54:	b40028c8 	cbz	x8, ffffffc01147216c <do_ipv6_setsockopt+0x10bc>
+ffffffc011471c58:	b9401668 	ldr	w8, [x19, #20]
+ffffffc011471c5c:	340028e8 	cbz	w8, ffffffc011472178 <do_ipv6_setsockopt+0x10c8>
+ffffffc011471c60:	128002b4 	mov	w20, #0xffffffea            	// #-22
+ffffffc011471c64:	14000008 	b	ffffffc011471c84 <do_ipv6_setsockopt+0xbd4>
+ffffffc011471c68:	79408b68 	ldrh	w8, [x27, #68]
+ffffffc011471c6c:	710002bf 	cmp	w21, #0x0
+ffffffc011471c70:	1a9f07e9 	cset	w9, ne	// ne = any
+ffffffc011471c74:	2a1f03f4 	mov	w20, wzr
+ffffffc011471c78:	12117908 	and	w8, w8, #0xffffbfff
+ffffffc011471c7c:	2a093908 	orr	w8, w8, w9, lsl #14
+ffffffc011471c80:	79008b68 	strh	w8, [x27, #68]
+ffffffc011471c84:	aa1303e0 	mov	x0, x19
+ffffffc011471c88:	97fa0e31 	bl	ffffffc0112f554c <release_sock>
+ffffffc011471c8c:	b94007e8 	ldr	w8, [sp, #4]
+ffffffc011471c90:	34001508 	cbz	w8, ffffffc011471f30 <do_ipv6_setsockopt+0xe80>
+ffffffc011471c94:	97fab628 	bl	ffffffc01131f534 <netdev_run_todo>
+ffffffc011471c98:	140000a6 	b	ffffffc011471f30 <do_ipv6_setsockopt+0xe80>
+ffffffc011471c9c:	710012df 	cmp	w22, #0x4
+ffffffc011471ca0:	540013c3 	b.cc	ffffffc011471f18 <do_ipv6_setsockopt+0xe68>  // b.lo, b.ul, b.last
+ffffffc011471ca4:	7946e268 	ldrh	w8, [x19, #880]
+ffffffc011471ca8:	710002bf 	cmp	w21, #0x0
+ffffffc011471cac:	1a9f07e9 	cset	w9, ne	// ne = any
+ffffffc011471cb0:	2a1f03f4 	mov	w20, wzr
+ffffffc011471cb4:	121d7908 	and	w8, w8, #0xfffffffb
+ffffffc011471cb8:	2a090908 	orr	w8, w8, w9, lsl #2
+ffffffc011471cbc:	7906e268 	strh	w8, [x19, #880]
+ffffffc011471cc0:	17fffff1 	b	ffffffc011471c84 <do_ipv6_setsockopt+0xbd4>
+ffffffc011471cc4:	aa1f03f4 	mov	x20, xzr
+ffffffc011471cc8:	f9403b61 	ldr	x1, [x27, #112]
+ffffffc011471ccc:	aa1303e0 	mov	x0, x19
+ffffffc011471cd0:	2a1903e2 	mov	w2, w25
+ffffffc011471cd4:	aa1403e3 	mov	x3, x20
+ffffffc011471cd8:	94006534 	bl	ffffffc01148b1a8 <ipv6_renew_options>
+ffffffc011471cdc:	aa0003f5 	mov	x21, x0
+ffffffc011471ce0:	aa1403e0 	mov	x0, x20
+ffffffc011471ce4:	97c2292a 	bl	ffffffc0104fc18c <kfree>
+ffffffc011471ce8:	b13ffebf 	cmn	x21, #0xfff
+ffffffc011471cec:	540000a3 	b.cc	ffffffc011471d00 <do_ipv6_setsockopt+0xc50>  // b.lo, b.ul, b.last
+ffffffc011471cf0:	2a1503f4 	mov	w20, w21
+ffffffc011471cf4:	17ffffe4 	b	ffffffc011471c84 <do_ipv6_setsockopt+0xbd4>
+ffffffc011471cf8:	12800c54 	mov	w20, #0xffffff9d            	// #-99
+ffffffc011471cfc:	17ffffe2 	b	ffffffc011471c84 <do_ipv6_setsockopt+0xbd4>
+ffffffc011471d00:	7100e73f 	cmp	w25, #0x39
+ffffffc011471d04:	540016a1 	b.ne	ffffffc011471fd8 <do_ipv6_setsockopt+0xf28>  // b.any
+ffffffc011471d08:	b4001695 	cbz	x21, ffffffc011471fd8 <do_ipv6_setsockopt+0xf28>
+ffffffc011471d0c:	f94012a0 	ldr	x0, [x21, #32]
+ffffffc011471d10:	b4001640 	cbz	x0, ffffffc011471fd8 <do_ipv6_setsockopt+0xf28>
+ffffffc011471d14:	39400808 	ldrb	w8, [x0, #2]
+ffffffc011471d18:	7100111f 	cmp	w8, #0x4
+ffffffc011471d1c:	54001580 	b.eq	ffffffc011471fcc <do_ipv6_setsockopt+0xf1c>  // b.none
+ffffffc011471d20:	7100091f 	cmp	w8, #0x2
+ffffffc011471d24:	540000e1 	b.ne	ffffffc011471d40 <do_ipv6_setsockopt+0xc90>  // b.any
+ffffffc011471d28:	39400408 	ldrb	w8, [x0, #1]
+ffffffc011471d2c:	7100091f 	cmp	w8, #0x2
+ffffffc011471d30:	54000081 	b.ne	ffffffc011471d40 <do_ipv6_setsockopt+0xc90>  // b.any
+ffffffc011471d34:	39400c08 	ldrb	w8, [x0, #3]
+ffffffc011471d38:	7100051f 	cmp	w8, #0x1
+ffffffc011471d3c:	540014e0 	b.eq	ffffffc011471fd8 <do_ipv6_setsockopt+0xf28>  // b.none
+ffffffc011471d40:	128002b4 	mov	w20, #0xffffffea            	// #-22
+ffffffc011471d44:	140000ab 	b	ffffffc011471ff0 <do_ipv6_setsockopt+0xf40>
+ffffffc011471d48:	128008d4 	mov	w20, #0xffffffb9            	// #-71
+ffffffc011471d4c:	17ffffce 	b	ffffffc011471c84 <do_ipv6_setsockopt+0xbd4>
+ffffffc011471d50:	710012df 	cmp	w22, #0x4
+ffffffc011471d54:	54000e23 	b.cc	ffffffc011471f18 <do_ipv6_setsockopt+0xe68>  // b.lo, b.ul, b.last
+ffffffc011471d58:	110006a8 	add	w8, w21, #0x1
+ffffffc011471d5c:	7104011f 	cmp	w8, #0x100
+ffffffc011471d60:	54000dc8 	b.hi	ffffffc011471f18 <do_ipv6_setsockopt+0xe68>  // b.pmore
+ffffffc011471d64:	b9403b68 	ldr	w8, [x27, #56]
+ffffffc011471d68:	530922a9 	lsl	w9, w21, #23
+ffffffc011471d6c:	310006bf 	cmn	w21, #0x1
+ffffffc011471d70:	52a0100a 	mov	w10, #0x800000              	// #8388608
+ffffffc011471d74:	1a890149 	csel	w9, w10, w9, eq	// eq = none
+ffffffc011471d78:	33005909 	bfxil	w9, w8, #0, #23
+ffffffc011471d7c:	2a1f03f4 	mov	w20, wzr
+ffffffc011471d80:	b9003b69 	str	w9, [x27, #56]
+ffffffc011471d84:	17ffffc0 	b	ffffffc011471c84 <do_ipv6_setsockopt+0xbd4>
+ffffffc011471d88:	aa1f03f5 	mov	x21, xzr
+ffffffc011471d8c:	aa1303e0 	mov	x0, x19
+ffffffc011471d90:	aa1503e1 	mov	x1, x21
+ffffffc011471d94:	97fffc3c 	bl	ffffffc011470e84 <ipv6_update_options>
+ffffffc011471d98:	aa0003f5 	mov	x21, x0
+ffffffc011471d9c:	2a1f03f4 	mov	w20, wzr
+ffffffc011471da0:	b4fff735 	cbz	x21, ffffffc011471c84 <do_ipv6_setsockopt+0xbd4>
+ffffffc011471da4:	b94006a8 	ldr	w8, [x21, #4]
+ffffffc011471da8:	91050269 	add	x9, x19, #0x140
+ffffffc011471dac:	f9800131 	prfm	pstl1strm, [x9]
+ffffffc011471db0:	885f7d2a 	ldxr	w10, [x9]
+ffffffc011471db4:	4b08014a 	sub	w10, w10, w8
+ffffffc011471db8:	880b7d2a 	stxr	w11, w10, [x9]
+ffffffc011471dbc:	35ffffab 	cbnz	w11, ffffffc011471db0 <do_ipv6_setsockopt+0xd00>
+ffffffc011471dc0:	52800029 	mov	w9, #0x1                   	// #1
+ffffffc011471dc4:	f98002b1 	prfm	pstl1strm, [x21]
+ffffffc011471dc8:	885f7ea8 	ldxr	w8, [x21]
+ffffffc011471dcc:	4b09010a 	sub	w10, w8, w9
+ffffffc011471dd0:	880bfeaa 	stlxr	w11, w10, [x21]
+ffffffc011471dd4:	35ffffab 	cbnz	w11, ffffffc011471dc8 <do_ipv6_setsockopt+0xd18>
+ffffffc011471dd8:	71000509 	subs	w9, w8, #0x1
+ffffffc011471ddc:	54001341 	b.ne	ffffffc011472044 <do_ipv6_setsockopt+0xf94>  // b.any
+ffffffc011471de0:	d50339bf 	dmb	ishld
+ffffffc011471de4:	14000093 	b	ffffffc011472030 <do_ipv6_setsockopt+0xf80>
+ffffffc011471de8:	2a1603f5 	mov	w21, w22
+ffffffc011471dec:	aa1703e0 	mov	x0, x23
+ffffffc011471df0:	aa1503e1 	mov	x1, x21
+ffffffc011471df4:	97c1051c 	bl	ffffffc0104b3264 <memdup_user>
+ffffffc011471df8:	aa0003f4 	mov	x20, x0
+ffffffc011471dfc:	b13ffc1f 	cmn	x0, #0xfff
+ffffffc011471e00:	54fff422 	b.cs	ffffffc011471c84 <do_ipv6_setsockopt+0xbd4>  // b.hs, b.nlast
+ffffffc011471e04:	b9408e88 	ldr	w8, [x20, #140]
+ffffffc011471e08:	321f5fe9 	mov	w9, #0x1fffffe             	// #33554430
+ffffffc011471e0c:	6b09011f 	cmp	w8, w9
+ffffffc011471e10:	54000d28 	b.hi	ffffffc011471fb4 <do_ipv6_setsockopt+0xf04>  // b.pmore
+ffffffc011471e14:	d000a829 	adrp	x9, ffffffc012977000 <erspan_link_ops+0x28>
+ffffffc011471e18:	b946b929 	ldr	w9, [x9, #1720]
+ffffffc011471e1c:	6b09011f 	cmp	w8, w9
+ffffffc011471e20:	54000ca8 	b.hi	ffffffc011471fb4 <do_ipv6_setsockopt+0xf04>  // b.pmore
+ffffffc011471e24:	d379e108 	lsl	x8, x8, #7
+ffffffc011471e28:	91024108 	add	x8, x8, #0x90
+ffffffc011471e2c:	eb15011f 	cmp	x8, x21
+ffffffc011471e30:	540014c9 	b.ls	ffffffc0114720c8 <do_ipv6_setsockopt+0x1018>  // b.plast
+ffffffc011471e34:	aa1403e0 	mov	x0, x20
+ffffffc011471e38:	97c228d5 	bl	ffffffc0104fc18c <kfree>
+ffffffc011471e3c:	128002b4 	mov	w20, #0xffffffea            	// #-22
+ffffffc011471e40:	17ffff91 	b	ffffffc011471c84 <do_ipv6_setsockopt+0xbd4>
+ffffffc011471e44:	7104011f 	cmp	w8, #0x100
+ffffffc011471e48:	54000340 	b.eq	ffffffc011471eb0 <do_ipv6_setsockopt+0xe00>  // b.none
+ffffffc011471e4c:	7100091f 	cmp	w8, #0x2
+ffffffc011471e50:	54000320 	b.eq	ffffffc011471eb4 <do_ipv6_setsockopt+0xe04>  // b.none
+ffffffc011471e54:	14000031 	b	ffffffc011471f18 <do_ipv6_setsockopt+0xe68>
+ffffffc011471e58:	97ff6a13 	bl	ffffffc01144c6a4 <ipv6_sock_ac_drop>
+ffffffc011471e5c:	2a0003f4 	mov	w20, w0
+ffffffc011471e60:	17ffff89 	b	ffffffc011471c84 <do_ipv6_setsockopt+0xbd4>
+ffffffc011471e64:	9102c260 	add	x0, x19, #0xb0
+ffffffc011471e68:	97fa3983 	bl	ffffffc011300474 <skb_queue_purge>
+ffffffc011471e6c:	2a1f03f4 	mov	w20, wzr
+ffffffc011471e70:	17ffff85 	b	ffffffc011471c84 <do_ipv6_setsockopt+0xbd4>
+ffffffc011471e74:	b9401669 	ldr	w9, [x19, #20]
+ffffffc011471e78:	b94043e8 	ldr	w8, [sp, #64]
+ffffffc011471e7c:	34000069 	cbz	w9, ffffffc011471e88 <do_ipv6_setsockopt+0xdd8>
+ffffffc011471e80:	6b08013f 	cmp	w9, w8
+ffffffc011471e84:	540004a1 	b.ne	ffffffc011471f18 <do_ipv6_setsockopt+0xe68>  // b.any
+ffffffc011471e88:	b9002368 	str	w8, [x27, #32]
+ffffffc011471e8c:	a94323e9 	ldp	x9, x8, [sp, #48]
+ffffffc011471e90:	2a1f03f4 	mov	w20, wzr
+ffffffc011471e94:	a9012369 	stp	x9, x8, [x27, #16]
+ffffffc011471e98:	17ffff7b 	b	ffffffc011471c84 <do_ipv6_setsockopt+0xbd4>
+ffffffc011471e9c:	2a1f03f4 	mov	w20, wzr
+ffffffc011471ea0:	b9003f7f 	str	wzr, [x27, #60]
+ffffffc011471ea4:	17ffff78 	b	ffffffc011471c84 <do_ipv6_setsockopt+0xbd4>
+ffffffc011471ea8:	12800009 	mov	w9, #0xffffffff            	// #-1
+ffffffc011471eac:	14000003 	b	ffffffc011471eb8 <do_ipv6_setsockopt+0xe08>
+ffffffc011471eb0:	2a1f03e8 	mov	w8, wzr
+ffffffc011471eb4:	12800069 	mov	w9, #0xfffffffc            	// #-4
+ffffffc011471eb8:	5280808a 	mov	w10, #0x404                 	// #1028
+ffffffc011471ebc:	6a0a02aa 	ands	w10, w21, w10
+ffffffc011471ec0:	54000100 	b.eq	ffffffc011471ee0 <do_ipv6_setsockopt+0xe30>  // b.none
+ffffffc011471ec4:	7110015f 	cmp	w10, #0x400
+ffffffc011471ec8:	540000a0 	b.eq	ffffffc011471edc <do_ipv6_setsockopt+0xe2c>  // b.none
+ffffffc011471ecc:	7100115f 	cmp	w10, #0x4
+ffffffc011471ed0:	54000241 	b.ne	ffffffc011471f18 <do_ipv6_setsockopt+0xe68>  // b.any
+ffffffc011471ed4:	321e0108 	orr	w8, w8, #0x4
+ffffffc011471ed8:	14000002 	b	ffffffc011471ee0 <do_ipv6_setsockopt+0xe30>
+ffffffc011471edc:	121d7929 	and	w9, w9, #0xfffffffb
+ffffffc011471ee0:	5281010a 	mov	w10, #0x808                 	// #2056
+ffffffc011471ee4:	6a0a02aa 	ands	w10, w21, w10
+ffffffc011471ee8:	540000a0 	b.eq	ffffffc011471efc <do_ipv6_setsockopt+0xe4c>  // b.none
+ffffffc011471eec:	7120015f 	cmp	w10, #0x800
+ffffffc011471ef0:	54000060 	b.eq	ffffffc011471efc <do_ipv6_setsockopt+0xe4c>  // b.none
+ffffffc011471ef4:	7100215f 	cmp	w10, #0x8
+ffffffc011471ef8:	54000101 	b.ne	ffffffc011471f18 <do_ipv6_setsockopt+0xe68>  // b.any
+ffffffc011471efc:	79408f6a 	ldrh	w10, [x27, #70]
+ffffffc011471f00:	2a1f03f4 	mov	w20, wzr
+ffffffc011471f04:	0a4a1d29 	and	w9, w9, w10, lsr #7
+ffffffc011471f08:	2a080128 	orr	w8, w9, w8
+ffffffc011471f0c:	53190908 	ubfiz	w8, w8, #7, #3
+ffffffc011471f10:	12167149 	and	w9, w10, #0xfffffc7f
+ffffffc011471f14:	17ffff05 	b	ffffffc011471b28 <do_ipv6_setsockopt+0xa78>
+ffffffc011471f18:	aa1303e0 	mov	x0, x19
+ffffffc011471f1c:	97fa0d8c 	bl	ffffffc0112f554c <release_sock>
+ffffffc011471f20:	b94007e8 	ldr	w8, [sp, #4]
+ffffffc011471f24:	34000048 	cbz	w8, ffffffc011471f2c <do_ipv6_setsockopt+0xe7c>
+ffffffc011471f28:	97fab583 	bl	ffffffc01131f534 <netdev_run_todo>
+ffffffc011471f2c:	128002b4 	mov	w20, #0xffffffea            	// #-22
+ffffffc011471f30:	b0007b49 	adrp	x9, ffffffc0123da000 <ncm_fops+0x48>
+ffffffc011471f34:	f85f03a8 	ldur	x8, [x29, #-16]
+ffffffc011471f38:	f9440929 	ldr	x9, [x9, #2064]
+ffffffc011471f3c:	eb08013f 	cmp	x9, x8
+ffffffc011471f40:	54001221 	b.ne	ffffffc011472184 <do_ipv6_setsockopt+0x10d4>  // b.any
+ffffffc011471f44:	2a1403e0 	mov	w0, w20
+ffffffc011471f48:	910683ff 	add	sp, sp, #0x1a0
+ffffffc011471f4c:	a9454ff4 	ldp	x20, x19, [sp, #80]
+ffffffc011471f50:	a94457f6 	ldp	x22, x21, [sp, #64]
+ffffffc011471f54:	a9435ff8 	ldp	x24, x23, [sp, #48]
+ffffffc011471f58:	a94267fa 	ldp	x26, x25, [sp, #32]
+ffffffc011471f5c:	a9416ffc 	ldp	x28, x27, [sp, #16]
+ffffffc011471f60:	a8c67bfd 	ldp	x29, x30, [sp], #96
+ffffffc011471f64:	f85f8e5e 	ldr	x30, [x18, #-8]!
+ffffffc011471f68:	d65f03c0 	ret
+ffffffc011471f6c:	9100c3e2 	add	x2, sp, #0x30
+ffffffc011471f70:	d101a3a3 	sub	x3, x29, #0x68
+ffffffc011471f74:	910023e4 	add	x4, sp, #0x8
+ffffffc011471f78:	aa1803e0 	mov	x0, x24
+ffffffc011471f7c:	aa1303e1 	mov	x1, x19
+ffffffc011471f80:	a906d3f6 	stp	x22, x20, [sp, #104]
+ffffffc011471f84:	f90013f5 	str	x21, [sp, #32]
+ffffffc011471f88:	94006f4b 	bl	ffffffc01148dcb4 <ip6_datagram_send_ctl>
+ffffffc011471f8c:	2a0003f4 	mov	w20, w0
+ffffffc011471f90:	35fff080 	cbnz	w0, ffffffc011471da0 <do_ipv6_setsockopt+0xcf0>
+ffffffc011471f94:	17ffff7e 	b	ffffffc011471d8c <do_ipv6_setsockopt+0xcdc>
+ffffffc011471f98:	f9401668 	ldr	x8, [x19, #40]
+ffffffc011471f9c:	b000b5e9 	adrp	x9, ffffffc012b2e000 <ip6_frags_ns_ctl_table>
+ffffffc011471fa0:	9104c129 	add	x9, x9, #0x130
+ffffffc011471fa4:	eb09011f 	cmp	x8, x9
+ffffffc011471fa8:	54ffaae0 	b.eq	ffffffc011471504 <do_ipv6_setsockopt+0x454>  // b.none
+ffffffc011471fac:	128001f4 	mov	w20, #0xfffffff0            	// #-16
+ffffffc011471fb0:	17ffff35 	b	ffffffc011471c84 <do_ipv6_setsockopt+0xbd4>
+ffffffc011471fb4:	aa1403e0 	mov	x0, x20
+ffffffc011471fb8:	97c22875 	bl	ffffffc0104fc18c <kfree>
+ffffffc011471fbc:	12800d14 	mov	w20, #0xffffff97            	// #-105
+ffffffc011471fc0:	17ffff31 	b	ffffffc011471c84 <do_ipv6_setsockopt+0xbd4>
+ffffffc011471fc4:	12800254 	mov	w20, #0xffffffed            	// #-19
+ffffffc011471fc8:	17ffff2f 	b	ffffffc011471c84 <do_ipv6_setsockopt+0xbd4>
+ffffffc011471fcc:	2a1603e1 	mov	w1, w22
+ffffffc011471fd0:	940079b0 	bl	ffffffc011490690 <seg6_validate_srh>
+ffffffc011471fd4:	3607eb60 	tbz	w0, #0, ffffffc011471d40 <do_ipv6_setsockopt+0xc90>
+ffffffc011471fd8:	aa1303e0 	mov	x0, x19
+ffffffc011471fdc:	aa1503e1 	mov	x1, x21
+ffffffc011471fe0:	97fffba9 	bl	ffffffc011470e84 <ipv6_update_options>
+ffffffc011471fe4:	aa0003f5 	mov	x21, x0
+ffffffc011471fe8:	2a1f03f4 	mov	w20, wzr
+ffffffc011471fec:	b4ffe4c0 	cbz	x0, ffffffc011471c84 <do_ipv6_setsockopt+0xbd4>
+ffffffc011471ff0:	b94006a8 	ldr	w8, [x21, #4]
+ffffffc011471ff4:	91050269 	add	x9, x19, #0x140
+ffffffc011471ff8:	f9800131 	prfm	pstl1strm, [x9]
+ffffffc011471ffc:	885f7d2a 	ldxr	w10, [x9]
+ffffffc011472000:	4b08014a 	sub	w10, w10, w8
+ffffffc011472004:	880b7d2a 	stxr	w11, w10, [x9]
+ffffffc011472008:	35ffffab 	cbnz	w11, ffffffc011471ffc <do_ipv6_setsockopt+0xf4c>
+ffffffc01147200c:	52800029 	mov	w9, #0x1                   	// #1
+ffffffc011472010:	f98002b1 	prfm	pstl1strm, [x21]
+ffffffc011472014:	885f7ea8 	ldxr	w8, [x21]
+ffffffc011472018:	4b09010a 	sub	w10, w8, w9
+ffffffc01147201c:	880bfeaa 	stlxr	w11, w10, [x21]
+ffffffc011472020:	35ffffab 	cbnz	w11, ffffffc011472014 <do_ipv6_setsockopt+0xf64>
+ffffffc011472024:	71000509 	subs	w9, w8, #0x1
+ffffffc011472028:	540000e1 	b.ne	ffffffc011472044 <do_ipv6_setsockopt+0xf94>  // b.any
+ffffffc01147202c:	d50339bf 	dmb	ishld
+ffffffc011472030:	9100c2a0 	add	x0, x21, #0x30
+ffffffc011472034:	52800601 	mov	w1, #0x30                  	// #48
+ffffffc011472038:	52800022 	mov	w2, #0x1                   	// #1
+ffffffc01147203c:	97bc92ab 	bl	ffffffc010396ae8 <__call_rcu.llvm.15599616201884756345>
+ffffffc011472040:	17ffff11 	b	ffffffc011471c84 <do_ipv6_setsockopt+0xbd4>
+ffffffc011472044:	2a080128 	orr	w8, w9, w8
+ffffffc011472048:	36ffe1e8 	tbz	w8, #31, ffffffc011471c84 <do_ipv6_setsockopt+0xbd4>
+ffffffc01147204c:	52800061 	mov	w1, #0x3                   	// #3
+ffffffc011472050:	aa1503e0 	mov	x0, x21
+ffffffc011472054:	97cdccd9 	bl	ffffffc0107e53b8 <refcount_warn_saturate>
+ffffffc011472058:	17ffff0b 	b	ffffffc011471c84 <do_ipv6_setsockopt+0xbd4>
+ffffffc01147205c:	2a1f03f5 	mov	w21, wzr
+ffffffc011472060:	1400000e 	b	ffffffc011472098 <do_ipv6_setsockopt+0xfe8>
+ffffffc011472064:	b94033e1 	ldr	w1, [sp, #48]
+ffffffc011472068:	9100c3e8 	add	x8, sp, #0x30
+ffffffc01147206c:	91004102 	add	x2, x8, #0x10
+ffffffc011472070:	52800023 	mov	w3, #0x1                   	// #1
+ffffffc011472074:	aa1303e0 	mov	x0, x19
+ffffffc011472078:	52800035 	mov	w21, #0x1                   	// #1
+ffffffc01147207c:	940037d8 	bl	ffffffc01147ffdc <__ipv6_sock_mc_join.llvm.14801622571615839170>
+ffffffc011472080:	3101881f 	cmn	w0, #0x62
+ffffffc011472084:	540000a0 	b.eq	ffffffc011472098 <do_ipv6_setsockopt+0xfe8>  // b.none
+ffffffc011472088:	2a0003f4 	mov	w20, w0
+ffffffc01147208c:	52800020 	mov	w0, #0x1                   	// #1
+ffffffc011472090:	340000d4 	cbz	w20, ffffffc0114720a8 <do_ipv6_setsockopt+0xff8>
+ffffffc011472094:	17fffefc 	b	ffffffc011471c84 <do_ipv6_setsockopt+0xbd4>
+ffffffc011472098:	52800020 	mov	w0, #0x1                   	// #1
+ffffffc01147209c:	14000003 	b	ffffffc0114720a8 <do_ipv6_setsockopt+0xff8>
+ffffffc0114720a0:	2a1f03e0 	mov	w0, wzr
+ffffffc0114720a4:	52800035 	mov	w21, #0x1                   	// #1
+ffffffc0114720a8:	9100c3e3 	add	x3, sp, #0x30
+ffffffc0114720ac:	2a1503e1 	mov	w1, w21
+ffffffc0114720b0:	aa1303e2 	mov	x2, x19
+ffffffc0114720b4:	940039bb 	bl	ffffffc0114807a0 <ip6_mc_source>
+ffffffc0114720b8:	2a0003f4 	mov	w20, w0
+ffffffc0114720bc:	17fffef2 	b	ffffffc011471c84 <do_ipv6_setsockopt+0xbd4>
+ffffffc0114720c0:	12800d54 	mov	w20, #0xffffff95            	// #-107
+ffffffc0114720c4:	17fffef0 	b	ffffffc011471c84 <do_ipv6_setsockopt+0xbd4>
+ffffffc0114720c8:	aa1303e0 	mov	x0, x19
+ffffffc0114720cc:	aa1403e1 	mov	x1, x20
+ffffffc0114720d0:	94003c99 	bl	ffffffc011481334 <ip6_mc_msfilter>
+ffffffc0114720d4:	2a0003f5 	mov	w21, w0
+ffffffc0114720d8:	aa1403e0 	mov	x0, x20
+ffffffc0114720dc:	97c2282c 	bl	ffffffc0104fc18c <kfree>
+ffffffc0114720e0:	2a1503f4 	mov	w20, w21
+ffffffc0114720e4:	17fffee8 	b	ffffffc011471c84 <do_ipv6_setsockopt+0xbd4>
+ffffffc0114720e8:	d5384109 	mrs	x9, sp_el0
+ffffffc0114720ec:	b940192a 	ldr	w10, [x9, #24]
+ffffffc0114720f0:	9000b5cb 	adrp	x11, ffffffc012b2a000 <tcp_prot+0x110>
+ffffffc0114720f4:	9110a16b 	add	x11, x11, #0x428
+ffffffc0114720f8:	7102211f 	cmp	w8, #0x88
+ffffffc0114720fc:	1108014a 	add	w10, w10, #0x200
+ffffffc011472100:	b900192a 	str	w10, [x9, #24]
+ffffffc011472104:	f9401661 	ldr	x1, [x19, #40]
+ffffffc011472108:	9000b5c9 	adrp	x9, ffffffc012b2a000 <tcp_prot+0x110>
+ffffffc01147210c:	911a0129 	add	x9, x9, #0x680
+ffffffc011472110:	12800002 	mov	w2, #0xffffffff            	// #-1
+ffffffc011472114:	aa1803e0 	mov	x0, x24
+ffffffc011472118:	9a8b0134 	csel	x20, x9, x11, eq	// eq = none
+ffffffc01147211c:	97fa1dd6 	bl	ffffffc0112f9874 <sock_prot_inuse_add>
+ffffffc011472120:	52800022 	mov	w2, #0x1                   	// #1
+ffffffc011472124:	aa1803e0 	mov	x0, x24
+ffffffc011472128:	aa1403e1 	mov	x1, x20
+ffffffc01147212c:	97fa1dd2 	bl	ffffffc0112f9874 <sock_prot_inuse_add>
+ffffffc011472130:	97b69292 	bl	ffffffc010216b78 <local_bh_enable>
+ffffffc011472134:	f9414668 	ldr	x8, [x19, #648]
+ffffffc011472138:	b0007aa9 	adrp	x9, ffffffc0123c7000 <ifa_ipv4_policy+0x70>
+ffffffc01147213c:	910ec129 	add	x9, x9, #0x3b0
+ffffffc011472140:	5280004a 	mov	w10, #0x2                   	// #2
+ffffffc011472144:	f9001674 	str	x20, [x19, #40]
+ffffffc011472148:	f9001109 	str	x9, [x8, #32]
+ffffffc01147214c:	7900226a 	strh	w10, [x19, #16]
+ffffffc011472150:	aa1303e0 	mov	x0, x19
+ffffffc011472154:	79008b7f 	strh	wzr, [x27, #68]
+ffffffc011472158:	940816de 	bl	ffffffc011677cd0 <inet6_cleanup_sock.cfi_jt>
+ffffffc01147215c:	aa1f03e0 	mov	x0, xzr
+ffffffc011472160:	97bd5ebe 	bl	ffffffc0103c9c58 <module_put>
+ffffffc011472164:	2a1f03f4 	mov	w20, wzr
+ffffffc011472168:	17fffec7 	b	ffffffc011471c84 <do_ipv6_setsockopt+0xbd4>
+ffffffc01147216c:	94075893 	bl	ffffffc0116483b8 <preempt_schedule_notrace>
+ffffffc011472170:	b9401668 	ldr	w8, [x19, #20]
+ffffffc011472174:	35ffd768 	cbnz	w8, ffffffc011471c60 <do_ipv6_setsockopt+0xbb0>
+ffffffc011472178:	2a1f03f4 	mov	w20, wzr
+ffffffc01147217c:	b9003f75 	str	w21, [x27, #60]
+ffffffc011472180:	17fffec1 	b	ffffffc011471c84 <do_ipv6_setsockopt+0xbd4>
+ffffffc011472184:	97ba0ba3 	bl	ffffffc0102f5010 <__stack_chk_fail>
+

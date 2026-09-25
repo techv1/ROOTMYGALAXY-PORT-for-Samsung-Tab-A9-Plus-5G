@@ -1,0 +1,22 @@
+=== RECOVERED STRUCTURE FIELD OFFSETS REPORT ===
+Analysis Target: Linux 5.4.249-qgki-31053672-abX216BXXS9DYJ7 (AArch64)
+
+1. struct task_struct
+   - pi_lock: offset 0x8dc (verified in remove_waiter, rt_mutex_adjust_prio_chain, task_blocks_on_rt_mutex)
+   - pi_waiters: offset 0x8e8 (rb_root_cached, verified in remove_waiter, rt_mutex_adjust_prio_chain)
+   - pi_waiters.rb_leftmost: offset 0x8f0
+   - pi_blocked_on: offset 0x900 (verified in remove_waiter at 0xffffffc010376498, task_blocks_on_rt_mutex at 0xffffffc0103761ec)
+
+2. struct rt_mutex
+   - wait_lock: offset 0x00 (size 8, raw_spinlock_t)
+   - waiters: offset 0x08 (size 16, struct rb_root_cached)
+   - waiters.rb_leftmost: offset 0x10
+   - owner: offset 0x18 (size 8, struct task_struct *)
+
+3. struct rt_mutex_waiter
+   - tree_entry: offset 0x00 (size 24, struct rb_node)
+   - pi_tree_entry: offset 0x18 (size 24, struct rb_node)
+   - task: offset 0x30 (size 8, struct task_struct *)
+   - lock: offset 0x38 (size 8, struct rt_mutex *)
+   - prio: offset 0x40 (size 4, int)
+   - deadlocked: offset 0x44 (size 2, unsigned short)
