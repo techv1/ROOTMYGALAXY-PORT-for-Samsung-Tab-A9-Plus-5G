@@ -42,6 +42,26 @@ For any AI agent picking up this research or porting task: review this briefing 
 - **The Consequence**: Kernel panic due to Clang Forward-Edge CFI violation.
 - **The Rule**: Always point function pointers to the corresponding `.cfi_jt` entry: `CALL_USERMODEHELPER_EXEC_WORK_CFI_JT` (`0xffffffc011681870`).
 
+### Trap 5: Post-Sigreturn Syscall Leak (Kernel Stack Clobbering)
+- **The Pitfall**: Calling `sched_yield()` (syscall 124) or `printf()` / `LOG()` (SYS_write 64) inside `thread_Y` after `sys_rt_sigreturn` completes.
+- **The Consequence**: Every system call pushes a brand new kernel stack frame on `thread_Y`'s 16KB stack page, immediately clobbering the stamped fake waiter before `sched_setscheduler()` can read it.
+- **The Rule**: `thread_Y` must enter a zero-syscall CPU spinloop using pure ARM hint instructions:
+  ```c
+  for (;;) {
+      __asm__ volatile("yield" ::: "memory");
+  }
+  ```
+
+### Trap 6: Missing `SIGUSR1` Signal Disposition
+- **The Pitfall**: Sending `tgkill(y_tid, SIGUSR1)` without explicitly installing a dummy `SIGUSR1` signal handler via `sigaction`.
+- **The Consequence**: On Linux, default disposition for `SIGUSR1` (Signal 10) is immediate process termination (`Worker killed by signal: 10`).
+- **The Rule**: Register a dummy `sigusr1_handler` before creating threads.
+
+### Trap 7: FPSIMD Context Header Offset Shift
+- **The Pitfall**: Indexing into the userspace signal frame as `(unsigned char *)fpsimd + off`.
+- **The Consequence**: `struct k_fpsimd_context` has a 16-byte header (`magic`/`size`/`fpsr`/`fpcr`) before `vregs`. But the kernel's `restore_fpsimd_context` copies starting from `vregs` (`offset 0x10`) to the stack `sp`. Indexing from `fpsimd` shifts the forged waiter by 16 bytes on the kernel stack, causing `waiter->lock` to land on 0 and crash with `Unable to handle kernel NULL pointer dereference`.
+- **The Rule**: Always write into `(unsigned char *)fpsimd->vregs + off`.
+
 ---
 
 ## 3. Recommended Implementation Roadmap

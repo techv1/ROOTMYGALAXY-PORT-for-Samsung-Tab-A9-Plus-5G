@@ -1,7 +1,8 @@
 #!/bin/bash
 set -euo pipefail
 
-WORKDIR="/root/s/minimal-rmg-ipv4"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+WORKDIR="$SCRIPT_DIR"
 OUTDIR="/root/s/ipv4-test-artifacts"
 NDK_CC="/root/android-ndk-r28/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android35-clang"
 BUILD_TMP="$(mktemp -d /tmp/x216b-build.XXXXXX)"

