@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 3,
+  "payloads": [
+    {
+      "payloadId": "gta9p-X216BXXS9DYJ7",
+      "displayName": "Samsung Galaxy Tab A9+ 5G | X216BXXS9DYJ7 | Linux 5.4.249",
+      "models": [
+        "SM-X216B"
+      ],
+      "kernelVersions": [
+        "5.4.249"
+      ],
+      "buildDisplays": [
+        "UP1A.231005.007.X216BXXS9DYJ7"
+      ],
+      "fingerprints": [
+        "samsung/gta9pxx/gta9p:14/UP1A.231005.007/X216BXXS9DYJ7:user/release-keys"
+      ],
+      "kernelReleases": [
+        "5.4.249-qgki-31053672-abX216BXXS9DYJ7"
+      ],
+      "kernelVersionInfos": [
+        "#1 SMP PREEMPT Wed Oct 15 23:51:00 KST 2025"
+      ],
+      "profile": "profile.json",
+      "exploit": {
+        "carrier": "minimal-rmg-ipv4",
+        "entry_primitive": "MCAST_BLOCK_SOURCE (IPv4 optname 43)",
+        "waiter_size": 80,
+        "waiter_offset": 216,
+        "post_primitive": "ashmem_fops -> configfs -> pipe_buffer -> cred/umh"
+      }
+    }
+  ]
+}
