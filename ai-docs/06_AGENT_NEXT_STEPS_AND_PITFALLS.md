@@ -13,7 +13,8 @@ For any AI agent picking up this research or porting task: review this briefing 
   - `do_ip_setsockopt` buffer starts at `0x3c00`.
   - Dangling futex waiter starts at `0x3cd8`.
   - Exact empirical offset is **`0xd8` (216 bytes)**.
-- [x] **Carrier Primitive**: IPv4 `MCAST_BLOCK_SOURCE` (optname 43) successfully stamps the waiter and exits early with `mov w20, #-99` (`-EADDRNOTAVAIL`).
+- [x] **Carrier Primitive**: IPv4 `MCAST_BLOCK_SOURCE` (optname 43) stamps the waiter with early exit `mov w20, #-99` (`-EADDRNOTAVAIL`).
+- [x] **Full Waiter Enclosure**: Sigreturn FPSIMD frame stamp (`stamp_sigreturn` via `restore_fpsimd_context`) verified in QEMU (`test_sigreturn_port.c`), providing a 528-byte window that encloses all 80 bytes of the waiter with 120 bytes of safety margin, resolving the 264-byte MCAST boundary cliff.
 - [x] **CFI Enforcement**: `.cfi_jt` requirement documented and mapped in `target.h`.
 - [x] **Defensive Baseline**: Knox KDP is absent; static UMH has empty path.
 
