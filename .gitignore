@@ -1,0 +1,13 @@
+# Platform tools and SDK binaries
+**/platform-tools/
+**/platform-tools-latest-linux.zip
+
+# Build and runtime logs
+*.log
+**/*.log
+
+# Object files and temporary artifacts
+*.o
+*.a
+*.so
+build_tmp/
