@@ -6,6 +6,7 @@ This repository contains the complete research artifacts, static disassembly aud
 ## Repository Layout
 
 ```
+├── ai-docs/           # AI agent technical knowledge base & ground-truth verification guides
 ├── minimal-rmg-ipv4/  # Active Root-My-Galaxy IPv4 port (source, tests, scripts, docs)
 ├── kernel/            # Kernel binaries, boot images, bootloader ELFs, DTB, and profiles
 ├── scripts/           # Python tracing, patching, and GDB automation tools
