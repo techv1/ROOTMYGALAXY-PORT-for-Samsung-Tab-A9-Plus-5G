@@ -4,6 +4,12 @@
 **Firmware**: `X216BXXS9DYJ7`  
 **Target Kernel**: `5.4.249-qgki-31053672-abX216BXXS9DYJ7` (AArch64 / Qualcomm SM6375)  
 
+> **Target-specific correction (2026-09-27):** the target waiter is 80 bytes
+> (`0x50`): task `+0x30`, lock `+0x38`, prio `+0x40`, alignment `+0x44`, and
+> deadline `+0x48`. Generic claims of 72 bytes / `deadlocked +0x44` are wrong
+> for X216B. See
+> `reference_flow_adaptation.md` and `qemu-rbtrace-gdb.log`.
+
 ---
 
 ## 1. Five Reference Research Profiles Comparison
@@ -13,7 +19,7 @@
 * **Architecture**: Open-architecture `KernelSnitch` implementation. Relies on futex timing side-channels to discover `mm_struct`, pipe oracle for KASLR resolution, `pipe_buffer` (`anon_pipe_buf_ops`) write primitive, and direct `task_struct->cred` overwrites.
 * **Direct Relevance to SM-X216B**:
   - Shares the identical **Linux 5.4 + Qualcomm + AArch64** kernel generation.
-  - Confirms the baseline Linux 5.4 `rt_mutex_waiter` structure layout: size `0x48` (72 bytes) with `prio` at `0x40` and no `wake_state`.
+  - Provides a generic Linux 5.4 comparison: `prio` at `0x40` and no `wake_state`. It does not establish the exact target waiter tail or extent.
   - Contrasting constraint: Nothing OS lacks Samsung DEFEX, Samsung Knox, and Samsung-specific `task_struct` field shifts.
 
 ### 2. Samsung Galaxy S23 Ultra (`soumarcelino/Root-My-Galaxy-SM-S918B`)
@@ -24,7 +30,7 @@
   - Resolves KASLR via `/proc/sys/kernel/random/boot_id` sysctl + `p0_fingerprint` table.
   - Employs an `ashmem` / `configfs` write primitive.
   - Bypasses Knox KDP (Kernel Data Protection) by avoiding direct `cred` writes; instead invokes `call_usermodehelper` or loads KernelSU (`ksud-f731u-kdp`).
-* **Direct Relevance to SM-X216B**: Defines the modern Samsung porting workflow, but its precompiled engine hardcodes **Linux 5.15** ABI assumptions.
+* **Direct Relevance to SM-X216B**: Defines a modern Samsung porting workflow for named S918B builds, but its profile assumptions are for Linux 5.15 and do not transfer to X216B 5.4.249. X216B also has an empty static UMH path, so UMH symbol presence does not make its helper route available.
 
 ### 3. Samsung Galaxy A15 (`SM-A155` / `SM-A156` / `a15-A155NKSS6BYH1`)
 * **Platform**: MediaTek Helio G99 / Dimensity 6100+, **Linux 5.10 / 5.15 AArch64**, stripped budget firmware.
@@ -38,7 +44,7 @@
 * **Architecture**: Detailed characterization of Samsung post-primitive defensive barriers:
   - **Samsung DEFEX**: Intercepts unauthorized binary execution in `/data/local/tmp` and monitors process tree parenting.
   - **SELinux Transitions**: Blocks direct `untrusted_app` to `kernel` or `su` transitions, requiring domain hopping or daemon sockets.
-* **Direct Relevance to SM-X216B**: Confirms that while DEFEX does not hook core locking primitives, post-primitive userland tooling on Samsung must respect DEFEX execution boundaries.
+* **Direct Relevance to SM-X216B**: Provides security-architecture context only. The X216B firmware's empty static UMH path disables standard UMH launches; this target-specific config must be checked before applying the A17 post-primitive model.
 
 ### 5. Samsung Galaxy S22 Ultra (`SM-S908B` / `SM-S908U`)
 * **Platform**: Qualcomm Snapdragon 8 Gen 1 (SM8450) / Exynos 2200, **Linux 5.10 AArch64**.
@@ -48,6 +54,13 @@
 ---
 
 ## 2. Eight Core Technical Questions Across Projects
+
+> **Target evidence update (2026-09-30):** bounded QEMU checks confirm the
+> X216B 64-bit `mmsghdr` ABI and ordinary ARM32 IPv4 multicast syscall
+> behavior. They do not show waiter overlap or a controlled write. A benign
+> module-autoload check did not invoke a sentinel helper, consistent with the
+> stock config's empty static UMH path. See
+> [`verified_findings_2026-09-30.md`](verified_findings_2026-09-30.md).
 
 ### 1. What part is reusable architecture?
 - **Trigger**: The `FUTEX_CMP_REQUEUE_PI` deadlock race triggering `remove_waiter()` rollback is identical across all vulnerable kernels.
@@ -64,7 +77,7 @@
 
 ### 3. What part is kernel-generation-specific?
 - **`rt_mutex_waiter` Structure Layout**:
-  - **Linux 5.4 (SM-X216B)**: Size `0x48` (72 bytes). Fields: `tree_entry` (0x00), `pi_tree_entry` (0x18), `task` (0x30), `lock` (0x38), `prio` (0x40), `deadlocked` (0x44). Does **NOT** contain `wake_state` or `ww_ctx`.
+  - **SM-X216B Android 5.4 target**: Size `0x50`; fields include `task` (0x30), `lock` (0x38), `prio` (0x40), alignment padding (0x44), and `deadline` (0x48). No `wake_state`/`ww_ctx` in this profile.
   - **Linux 5.15 (S918B)**: Size `0x58` (88 bytes). Adds `wake_state` (0x40), `prio` (0x44), `deadline` (0x48), `ww_ctx` (0x50).
   - **Linux 6.1 / 6.6 (S24/S25 series in `targets-v3.json`)**: Adds lockless wait flags and timer struct modifications.
 - **`task_struct` Offsets**:
@@ -148,7 +161,7 @@
 | **`KIMAGE_TEXT_BASE`** | `0xffffffc010080000` | **VERIFIED** | Kernel header & ELF program headers |
 | **`task_struct::pi_lock`** | `0x8dc` | **VERIFIED** | Disassembly cross-check (3 independent functions) |
 | **`task_struct::pi_blocked_on`** | `0x900` | **VERIFIED** | `remove_waiter @ 0x10376498` |
-| **`rt_mutex_waiter` Size** | `0x48` (72 bytes) | **KERNEL-VERSION DEPENDENT** | Linux 5.4 struct ABI layout |
+| **`rt_mutex_waiter` Size** | **0x50 (80 bytes)** | **KERNEL-VERSION DEPENDENT** | X216B target source/disassembly; see correction above |
 | **`rt_mutex_waiter::wake_state`** | Absent in Linux 5.4 | **NOT APPLICABLE** | 5.15+ only field |
 | **`do_futex` Frame / Waiter** | `0x210` frame, waiter at `[x29 - 0xc8]` | **VERIFIED** | `do_futex @ 0x103c0a64` |
 | **`pselect6` `stack_fds` Overlap** | Statically verified (+120B offset) | **VERIFIED** | `core_sys_select @ 0x1053c34c` |
@@ -166,7 +179,7 @@
 1. **Vulnerability & Geometry Are 100% Confirmed on SM-X216B**:
    The SM-X216B kernel contains the unpatched, vulnerable `remove_waiter()` logic of CVE-2026-43499. The stack placement of `rt_mutex_waiter` in `do_futex` and its geometric overlap with `core_sys_select`'s `stack_fds` buffer are mathematically verified and confirmed.
 2. **Flagship Closed-Engine Payloads (S918B / S24 / S25) Cannot Be Reused**:
-   Precompiled payloads from the S23/S24/S25 family cannot simply be patched with new symbol offsets. They assume **Linux 5.15/6.x ABI structures** (88-byte `rt_mutex_waiter` with `wake_state` at `+0x40`), whereas SM-X216B runs **Linux 5.4** (72-byte structure with `prio` at `0x40`). Any implementation requires a Linux 5.4 native structure definition (matching the legacy profile seen in `a15`'s `LEGACY_RT_MUTEX_WAITER 1` and `root-my-nothing`).
+   Precompiled payloads from the S23/S24/S25 family cannot simply be patched with new symbol offsets. They assume newer ABI structures (including `wake_state` at `+0x40`), whereas SM-X216B has target-confirmed `prio` at `+0x40` and deadline at `+0x48`. Any implementation requires the target-derived structure definition.
 3. **Absence of Samsung KDP Simplifies the Target Context**:
    Unlike the flagship Galaxy S23 (S918B) or S25 series, the SM-X216B budget tablet does **not** have Samsung Knox Kernel Data Protection (KDP) enabled. The kernel lacks hypervisor-enforced write protection over task credentials.
 4. **Decisive Runtime Constraint**:

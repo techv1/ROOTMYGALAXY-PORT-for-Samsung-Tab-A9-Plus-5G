@@ -18,10 +18,10 @@ The source logic divides into three main structural cases:
 ### Compiled Disassembly Analysis (`0xffffffc011638ae8`)
 
 ```arm64
-0xffffffc011638ae8: ldp      x9, x11, [x0, #8]       ; x9 = node->rb_left (+8), x11 = node->rb_right (+0x10)
-0xffffffc011638aec: cbz      x11, #0xffffffc011638b3c ; If node->rb_right == NULL -> Case 1
-0xffffffc011638af0: cbz      x9, #0xffffffc011638b64  ; If node->rb_left == NULL -> Case 2
-0xffffffc011638af4: ldr      x10, [x9, #0x10]         ; Case 3: Both children present. x10 = left->rb_right
+0xffffffc011638ae8: ldp      x9, x11, [x0, #8]       ; x9 = node->rb_right (+8), x11 = node->rb_left (+0x10)
+0xffffffc011638aec: cbz      x11, #0xffffffc011638b3c ; If node->rb_left == NULL -> Case 1
+0xffffffc011638af0: cbz      x9, #0xffffffc011638b64  ; If node->rb_right == NULL -> Case 2
+0xffffffc011638af4: ldr      x10, [x9, #0x10]         ; Case 3: Both children present. x10 = right->rb_left
 0xffffffc011638af8: cbz      x10, #0xffffffc011638b88 ; Check successor child
 ...
 0xffffffc011638b00: mov      x12, x10                 ; Successor loop to find min node
@@ -33,8 +33,8 @@ The source logic divides into three main structural cases:
 
 | Upstream Source Case | Source File & Logic | Compiled Address | Branch / Decision Condition | Compiled Output Semantics |
 |:---|:---|:---:|:---|:---|
-| **Case 1** | `lib/rbtree.c`: `!node->rb_right` | `0xffffffc011638b3c` | `cbz x11` at `0x11638aec` | Replaces `node` with `node->rb_left` (`x9`). Adjusts parent pointers. |
-| **Case 2** | `lib/rbtree.c`: `!node->rb_left` | `0xffffffc011638b64` | `cbz x9` at `0x11638af0` | Replaces `node` with `node->rb_right` (`x11`). Adjusts parent pointers. |
+| **Case 1** | `lib/rbtree.c`: `!node->rb_left` | `0xffffffc011638b3c` | `cbz x11` at `0x11638aec` | Replaces `node` with `node->rb_right` (`x9`). Adjusts parent pointers. |
+| **Case 2** | `lib/rbtree.c`: `!node->rb_right` | `0xffffffc011638b64` | `cbz x9` at `0x11638af0` | Replaces `node` with `node->rb_left` (`x11`). Adjusts parent pointers. |
 | **Case 3 (Loop)** | `lib/rbtree.c`: both children present, find in-order successor | `0xffffffc011638af4` – `0xffffffc011638b38` | `cbnz x10` at `0x11638b10` | Traverses right child's left arm to locate successor node (`x12`). Splices successor and copies color/pointers. |
 
 ---

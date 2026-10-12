@@ -17,7 +17,7 @@ This repository contains the organized research artifacts, minimal test harness,
 
 - **`minimal-rmg/`**: Clean C research test harness, build scripts, and headers.
   - `futex_race.c`: Baseline research harness testing futex PI cross-thread state transitions.
-  - `main.c`: Unprivileged privilege audit runner (UID 1000).
+  - `main.c`: QEMU diagnostic runner; initramfs starts it as UID 0, so it does not prove escalation.
   - `common.h`, `p0_fingerprint.h`, `target.h`: Kernel structure offsets and target definitions.
   - `build.sh`: NDK cross-compilation and packaging script.
 
@@ -29,7 +29,8 @@ This repository contains the organized research artifacts, minimal test harness,
   - `patch_defex.py`: Kernel DEFEX instrumentation patch utility.
 
 - **`docs/`**: Comprehensive research documentation (`.md`).
-  - `smx216b_final_research_report.md`: Final security-impact and boundary characterization.
+  - `verified_findings_2026-09-30.md`: Current consolidated findings and evidence status.
+  - `smx216b_final_research_report.md`: Static and bounded-QEMU analysis with limitations.
   - `smx216b_alternative_architecture_matrix.md`: Architectural cross-reference matrix.
   - `x216b_architecture_compatibility_final.md`: Kernel version compatibility assessment.
   - `rb_erase_source_reconciliation.md`: Disassembly and call-site reconciliation.

@@ -1,5 +1,10 @@
 # Comprehensive Architecture Compatibility Audit: SM-X216B vs Public GhostLock Implementations
 
+> **Target-layout update (2026-09-27):** this audit's repeated assertion that
+> SM-X216B's `rt_mutex_waiter` is 72 bytes is superseded by target source and
+> disassembly. The target waiter is 80 bytes (`0x50`), with `prio +0x40`,
+> alignment at `+0x44`, and `deadline +0x48`.
+
 **Target Device**: Samsung Galaxy Tab A9+ 5G (`SM-X216B` / `gta9p`)  
 **Firmware**: `X216BXXS9DYJ7`  
 **Kernel**: `5.4.249-qgki-31053672-abX216BXXS9DYJ7` (Qualcomm SM6375, AArch64 Little-Endian)  
@@ -13,9 +18,9 @@
 | Reference Implementation | Target Platform & Baseline | Entry Primitive / Stamping Method | Post-Primitive Strategy | Compatibility on SM-X216B | Primary Blocker / Divergence Reason |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **1. ang3lo-azevedo/root-my-nothing** | Nothing Phone 1 (SM7325, Linux 5.4.302) | 64-bit `pselect6` / `stack_fds` | Direct `cred` overwrites & SELinux disable | **INCOMPATIBLE** | Waiter offset lands in zeroed `res_in`/`res_out` bitmask region; `cred` layout and offsets diverge. |
-| **2. sarabpal-dev/IonStack-S22U** | Samsung S22 Ultra (SM8450/b0q, Linux 5.10.226) | `exp32` (ARM32 compat `setsockopt` `MCAST_JOIN_SOURCE_GROUP`) | Fake `ashmem_fops` → `configfs` r/w → pipe phys r/w → UMH daemon | **PARTIALLY COMPATIBLE** *(Highest structural match)* | ARM32 compat execution supported (`CONFIG_COMPAT=y`), requires geometry recalculation (`EXP32_STAMP_OFF`) and 72-byte `rt_mutex_waiter` adjustment. |
-| **3. soumarcelino/Root-My-Galaxy-SM-S918B** | Samsung S23 Ultra (SM8550/dm3q, Linux 6.1.x) | 64-bit `pselect6` + `sigreturn` stack alignment | Precompiled closed-engine (`cve-2026-43499-app.so`) → KernelSU | **INCOMPATIBLE** | Binary payload hardcodes Linux 6.1 88-byte waiter (`0x58`) and 64-bit `pselect6` entry geometry. |
-| **4. BuSung-dev/Root-My-Galaxy-Payloads** | Samsung Multi-Device (S24, S25, Tab S9, A15) | Multi-target profiles (mostly 6.1/6.6; A15 is 5.10) | `cve-2026-43499-app.so` closed payload + KSU daemon | **INCOMPATIBLE** | Precompiled engine cannot run on Linux 5.4 72-byte structs (`0x48`); A15 profile is 5.10 with different struct offsets. |
+| **2. sarabpal-dev/IonStack-S22U** | Samsung S22 Ultra (SM8450/b0q, Linux 5.10.226) | `exp32` (ARM32 compat `setsockopt` `MCAST_JOIN_SOURCE_GROUP`) | Fake `ashmem_fops` → `configfs` r/w → pipe phys r/w → UMH daemon | **PARTIALLY COMPATIBLE** *(Highest structural match)* | ARM32 compat execution supported (`CONFIG_COMPAT=y`), requires geometry recalculation (`EXP32_STAMP_OFF`) and target field/layout adjustment. |
+| **3. soumarcelino/Root-My-Galaxy-SM-S918B** | Samsung S23 Ultra (SM8550/dm3q, Linux 5.15.189) | Firmware-specific S918B profiles | Payload and KernelSU integration for named S918B builds | **REFERENCE ONLY** | Exact 5.15.189 S918B firmware profiles do not establish compatibility with X216B 5.4.249. |
+| **4. BuSung-dev/Root-My-Galaxy-Payloads** | Samsung Multi-Device, including S23 Ultra (5.15.189) | Device/build-specific profiles | Firmware-matched payload and KernelSU integration | **REFERENCE ONLY** | The linked S9180 FZF5 profile is marked in progress; no X216B/SM6375 profile. |
 | **5. mobilehackinglab/ghostlock-a17** | Samsung Galaxy A17 (MT6789, Linux 6.12.23) | `pselect6` reclaim | UMH root daemon (`pipe_physrw` bypasses Samsung KDP) | **INCOMPATIBLE** | Built entirely around Linux 6.12 BTF layouts and KDP bypass; `pselect` geometry fails on 5.4. |
 | **6. NebuSec/CyberMeowfia** | Generic Linux / Android Reference (v6.x) | 64-bit `pselect6` | `pipe_buffer` corruption → arbitrary phys r/w → task cred patch | **PARTIALLY COMPATIBLE** (Conceptually) / **INCOMPATIBLE** (As-Is) | General pipe phys r/w concept is valid, but implementation hardcodes 64-bit `pselect` and 6.x struct offsets. |
 
@@ -27,7 +32,7 @@
 * **Target Baseline**: Nothing Phone 1 (Spacewar), Snapdragon 778G+ (SM7325), Linux `5.4.302-qgki`.
 * **Required Kernel APIs**: `sys_futex` (`FUTEX_WAIT_REQUEUE_PI`, `FUTEX_CMP_REQUEUE_PI`), `sys_pselect6`, `sched_setattr`, `sys_open`, `sys_read`, `sys_write`.
 * **Required Structures**:
-  * Linux 5.4 `rt_mutex_waiter` (72 bytes / `0x48`).
+  * SM-X216B Android 5.4 waiter: 80 bytes; `task +0x30`, `lock +0x38`, `prio +0x40`, `deadline +0x48`.
   * Linux 5.4 `task_struct` (offsets: `pi_lock` 0x8c4, `pi_blocked_on` 0x8e8, `cred` 0x7f0).
 * **Required Symbols & Availability on SM-X216B**:
   * `anon_pipe_buf_ops`: Present (`0xffffffc0121f55b8`).
@@ -64,7 +69,7 @@
   * `call_usermodehelper_exec_work`: Present in X216B (`0xffffffc010317274`).
   * `system_unbound_wq`: Present in X216B (`0xffffffc01296f9c8`).
 * **Kernel Version Assumptions vs SM-X216B**:
-  * S22U targets Linux 5.10 (80-byte `rt_mutex_waiter`). X216B is Linux 5.4 (72-byte `rt_mutex_waiter`).
+  * S22U targets Linux 5.10 (80-byte `rt_mutex_waiter`). X216B is Linux 5.4 (also 80 bytes, with target-specific task layout and syscall geometry).
   * S22U waiter offset within `setsockopt` buffer is `buffer + 0x58` (measured for 5.10). On X216B 5.4, the stack depth of `compat_ipv6_setsockopt` vs `do_futex` will differ by a few words and must be calibrated.
 * **Verdict**: **PARTIALLY COMPATIBLE** — This is the only public architecture whose entry primitive bypasses the broken `pselect` geometry.
 
@@ -100,9 +105,29 @@
   * Demonstrates that Samsung Knox KDP / RKP prevents direct modification of task credentials (`current->cred`) via write-protection of cred slabs at EL2.
   * Introduces the **User Mode Helper (UMH) execution path**: triggers `call_usermodehelper_exec_work` on `system_unbound_wq` to spawn an unconfined root process (`u:r:kernel:s0`), evading KDP entirely.
 * **Evaluation on SM-X216B**:
-  * **Defensive Baseline Difference**: SM-X216B does **NOT** have Knox KDP active (`# CONFIG_RKP / KDP not set` in `ikconfig`). While UMH is viable (symbols exist in X216B), it is not strictly mandated by hardware protections.
+  * **Defensive Baseline Difference**: SM-X216B does **NOT** have Knox KDP active (`# CONFIG_RKP / KDP not set` in `ikconfig`). However, the target config has `CONFIG_STATIC_USERMODEHELPER=y` and `CONFIG_STATIC_USERMODEHELPER_PATH=""`, which disables usermode-helper launches. UMH symbols being present does not make the daemon path usable.
   * **Entry Primitive**: Uses 64-bit `pselect6`, which fails on X216B.
-  * **Verdict**: **INCOMPATIBLE** as an entire chain, though the UMH execution model is structurally supported by the kernel symbols.
+  * **Verdict**: **INCOMPATIBLE** as an entire chain; both its entry primitive and UMH post-primitive path conflict with the target configuration.
+
+### 5.1 Additional S23 Ultra 5.15 references
+
+The current [Root-My-Galaxy-SM-S918B](https://github.com/soumarcelino/Root-My-Galaxy-SM-S918B)
+README identifies firmware-specific S918B profiles on Linux 5.15.189. This
+is useful as a later porting-history reference, but its status applies to the
+listed S918B builds, not to X216B.
+
+The [tcp-zerocopy-sm investigation](https://github.com/Meowkis/tcp-zerocopy-sm)
+targets an S918B 5.15.189 build. Its README says the work is incomplete,
+warns that earlier standalone tests were incorrect, and says an isolated
+payload test is not sufficient to establish the full behavior. It provides
+no X216B result.
+
+The linked [S9180 FZF5 target profile](https://github.com/BuSung-dev/Root-My-Galaxy-Payloads/blob/main/src/targets/dm3q-S9180ZHS8FZF5/target.h)
+is for an S23 Ultra 5.15.189 firmware and the repository lists it as in
+progress. Its layout assumptions differ from the X216B 5.4.249 profile. Do
+not transfer its constants or treat its UMH configuration as evidence about
+the X216B kernel. The target firmware's empty static UMH path is documented
+in `smx216b_final_research_report.md`.
 
 ---
 
@@ -127,7 +152,7 @@
 | **Kernel Version** | `5.4.249-qgki` | `5.10.226` | `5.4.302-qgki` | `6.1.x` - `6.12.x` |
 | **`CONFIG_COMPAT`** | **YES** (`CONFIG_COMPAT=y`) | YES | YES | YES |
 | **`compat_ipv6_setsockopt`** | **0xffffffc011472188** | Present | Present | Present |
-| **`rt_mutex_waiter` Size** | **72 bytes (`0x48`)** | 80 bytes (`0x50`) | 72 bytes (`0x48`) | 88 bytes (`0x58`) |
+| **`rt_mutex_waiter` Size** | **80 bytes (`0x50`)** | 80 bytes (`0x50`) | 80 bytes (`0x50`) | 88 bytes (`0x58`) |
 | **`wake_state` field** | **ABSENT** | ABSENT | ABSENT | Present (+0x40) |
 | **`task_struct::pi_lock`** | **0x8dc** | 0x86c | 0x8c4 | 0x930+ |
 | **`task_struct::pi_blocked_on`** | **0x900** | 0x898 | 0x8e8 | 0x950+ |
