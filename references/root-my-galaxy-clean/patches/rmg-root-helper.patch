@@ -1,0 +1,9 @@
+diff --git a/su_daemon.c b/su_daemon.c
+--- a/su_daemon.c
++++ b/su_daemon.c
+@@ -30 +30 @@
+-#define KSU_LOADER_PATH "/data/local/tmp/ksud-s25u-kdp"
++#define KSU_LOADER_PATH "/data/local/tmp/rmg-ksud"
+@@ -483 +483 @@
+-            "me.weishu.kernelsu", (char *)NULL);
++            "me.weishu.kernelsu", "--allow-shell", (char *)NULL);

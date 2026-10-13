@@ -1,0 +1,180 @@
+# QEMU 验证器具（kernel.patched）
+
+把 exploit 作为 QEMU guest 的 `/init` 跑：默认 `--escalate`（端到端提权：
+perf 泄露自己 task → comm 校验 → cred 写 → `getuid()==0`），以 **uid 2000**
+起跑模拟设备 shell。其它模式用 `GLMODE` 传（build_and_run.sh 会写进
+initramfs 的 `/glmode`，wrapper 读出后追加为 argv）：
+
+```sh
+GLMODE="--verify-all" ./build_and_run.sh    # 指针写 + leaf + 读原语 + restore
+GLMODE="--bench 20"   ./build_and_run.sh    # 写原语单 attempt 成功率
+GLMODE="--root"       ./build_and_run.sh    # 提权 + tmpfs/4755 端局自检
+```
+
+```sh
+./build_and_run.sh          # 交叉编译 + 打包 initramfs + 启动 QEMU(-gdb/:1234)
+# 另开一个终端：
+./read_log.py               # 读内核 log_buf 里的 exploit 日志（QMP 物理读，轻量）
+./read_log.py --wait 1200   # TCG 较慢时可以多等一会
+```
+
+长时间统计用自动重开器具（每轮一个干净 boot，卡死自动判死并重开，**不需要人
+守着**；和 `build_and_run.sh` 一样要在沙箱外跑）：
+
+```sh
+./run_rounds.py --mode "--bench 30" --rounds 6      # 6 个 boot x 30 次单 attempt 写
+./run_rounds.py --mode "--verify-all" --rounds 5 --stall 120
+./run_rounds.py --mode "--su-server" --rounds 1 --stall 0 --timeout 300   # 常驻模式
+```
+
+轮次结束的判据是 wrapper 的独立标记 `init: ghostlock_exe[<mode>] exited
+status=0x...`；若日志静默超过 `--stall` 秒（默认 90）且 `glqemu.Guest.wedge()`
+判定 8 个 vCPU 全停在 `__cmpwait`（见下"第二种失败模式"），该轮记为 `WEDGED` 并
+直接开下一轮。每轮产物落在 `--out`（默认 `/tmp/ghostlock-qemu`）：
+`round-NN.log`（过滤后的 exploit 日志）、`round-NN.raw`（1MB 内核日志缓冲原件，
+供事后 `strings` 查 oops）、`round-NN.console`（QEMU 自身输出），汇总写
+`report-<mode>.txt`。退出码为 0 仅当所有轮都 PASS。
+
+`glqemu.py` 是 `read_log.py` 与 `run_rounds.py` 共用的 QMP/日志读取层（追
+`log_buf`、抓 vCPU 寄存器、判 wedge），改内核地址常量只需改这一处。
+
+exploit 用 `--log-file /dev/kmsg` 输出（wrapper 挂 `devtmpfs`），日志直接进内核
+日志缓冲；`read_log.py` 走 QMP `pmemsave` 读**物理内存**（不受 vCPU 所处 EL 影响），
+并追 `log_buf` 指针取实际缓冲区（多 vCPU 时内核会把静态 `__log_buf` 换成按 CPU
+协商出来的大缓冲）。每 15s 重试直到出现日志行（默认最多等 300s，`--wait N` 调整），
+`--until REGEX` 可指定结束条件（如 `--until 'single-attempt writes succeeded'`）。
+
+期望输出（`--escalate` 节选）：
+
+```text
+... [*] perf task leak: tid=236 samples=1292 abi=1292 in_sched=27 in_window=12 cands=1 best=ffffffc07a373240 (n=12)
+... [*] escalate: candidate 1/1 task=ffffffc07a373240 (n=12)
+... [+] slide read8 boot_id raw=67686f73746c6f6330d74c0b80ffffff lo=636f6c74736f6867 ... ok=1   # "ghostloc"
+... [+] slide escalate-cred test PASSED
+... [+] slide child pid=246 uid=0 ...                       # 子进程已是 root
+...     init: ghostlock_exe exited status=0x0 (SUCCESS)     # wrapper 退出码标记
+```
+
+（`--verify-all` 的期望输出仍是 write/leaf/read/restore 四段 PASSED。）
+
+`--bench` 期望：`bench: run i/N ok|FAIL` 逐行，最后
+`bench: x/N single-attempt writes succeeded (P%)`。
+
+2026-10-01 用 `run_rounds.py` 量到的结果：`--bench 10` x3 + `--bench 30` x6
+= **210/210（100%）**，8 个独立 boot，日志无丢行；同一天所有模式合计约 250 次
+attempt 里 3 次 oops（≈1%），但这 3 次都把整机带走（见下）。
+
+initramfs 里还有一个 `glsh`（`glsh.c`）：设备有 `/system/bin/sh`，QEMU 里没有，
+broker 的通用命令行路径就测不到。`GLMODE="--su-selftest --shell /glsh"`
+可以让服务端 exec 这个最小 `sh -c`（支持 `id`/`echo`/`cat`），验证
+「客户端 → 服务端 → exec 子进程继承 root cred → 回读输出」整条链路；
+`--su-selftest` 现在也把这条算进 PASS 条件（设备上走 `/system/bin/sh`）。
+
+`--root` 期望（提权段同上，之后）：
+
+```text
+... [*] root: /data/local/tmp/glrt/glsh (from /proc/self/exe) mode 4755, exec as uid 2000...
+... [+] root: 4755 payload confirmed (uid 2000 -> euid 0)
+```
+
+（QEMU initramfs 没有 shell，payload 退化为本程序自身 + `--glsh-proof`；
+设备上会取 `/system/bin/sh`，回读它以 euid 0 执行的 `id` 输出验证 `uid=0(`。）
+
+说明：
+
+- `init_wrapper.c` 会挂载 `/proc` 和 `devtmpfs`、给 fd 0/1/2 补 `/dev/null`
+  （QEMU 无控制台，否则 `pipe()` 会占用 fd 0/1）、关掉内核 printk 限流
+  （`printk_ratelimit=0` + `printk_ratelimit_burst=1000000` +
+  `printk_devkmsg=on`，否则最终结果行被 `output lines suppressed` 吞掉），
+  然后以 uid 2000 + 补充组 3003（`CONFIG_ANDROID_PARANOID_NETWORK` 要求
+  inet 组才能建 AF_INET socket，真机 shell 同款）fork 出 exploit，并自己保持
+  PID 1 存活；exploit 退出后 wrapper 会把退出码写进 `/dev/kmsg`
+  （`init: ghostlock_exe exited status=... (SUCCESS)`），作为一个不受 exploit
+  日志影响的独立判据。
+
+  **限流的真正闸门**（2026-10-01 实测）：用户态写 `/dev/kmsg` 由
+  `printk.devkmsg`（`/proc/sys/kernel/printk_devkmsg`，取值 `on`/`off`/
+  `ratelimit`，默认 `ratelimit`）控制，**不是** `printk_ratelimit*`。在
+  kernel.patched 上直接读内核里的 `printk_ratelimit_state` 确认
+  `interval=0, burst=1000000` 仍然每轮丢 13–35 行（丢掉的正是各子项
+  `PASSED` 行）。`build_and_run.sh` 的 `-append` 现在带
+  `printk.devkmsg=on`，wrapper 里也补写了该 sysctl；两者都能让日志一行不丢。
+- exploit 以 `--no-rt --attempts 4` 跑（设备 shell 拿不到 RT；walk 偶发卡在
+  `rt_mutex_adjust_prio_chain` 的 `raw_spin_trylock` 重试循环，靠 attempt 重试）。
+- `carrier=-1/22`（EINVAL）是预期的：拷贝完成后 `ip_mc_source` 因假地址组失败；
+  拷贝本身已发生（`write_ok=1` 即证明）。
+- 写目标为 `sysctl_bootid + 8`：`proc_do_uuid()` 在 `bootid[8]==0` 时会重新生成
+  UUID，写低 8 字节会被验证读覆盖。
+- fake `rt_mutex` 用 `empty_zero_page` 的**独立槽位**（每次 attempt 取新偏移
+  `+n*0x20`）；**不要**复用同一把锁——walk 会把 `waiters.root/leftmost` 留在锁里
+  指向本次 waiter，下一次 walk 会解引用已释放栈并触发 `BUG_ON(w->lock != lock)`。
+- QEMU 使用 `nokaslr` + `--kaslr-base 0xffffff8008080800`；guest 默认
+  `-smp 8`（`SMP=N` 可覆盖），与真机 8 核一致，也避免单核 TCG 下
+  walk 卡死冻住整个 VM——多核时只烧掉一个 vCPU，attempt 超时后仍可重试。
+ 需要 GDB 观测时 attach `:1234`（rt_mutex_adjust_prio_chain @ 0xffffff8008162d70、
+  rt_mutex_adjust_pi @ 0xffffff8008162c58、do_futex @ 0xffffff80081a5248）。
+
+  `KASLR=1 ./build_and_run.sh` 则**不开** `nokaslr`：wrapper 会读
+  `/proc/cmdline`，此时不再追加 `--kaslr-base`，让 exploit 自己 perf 泄露
+  slide（真机路径）。`glqemu.py` 随之做了 KASLR 地址换算：读 `memstart_addr`
+  把线性映射 VA 翻成物理地址（KASLR 会整体平移线性映射，`PAGE_OFFSET` 窗口
+  判断失效），读 `kimage_voffset` 得到镜像 slide 用于 vCPU PC 比对，所以
+  `read_log.py`/`run_rounds.py` 在 KASLR 开启时同样可用。
+  注意：TCG 下每次 perf 溢出都是一次 ~0.2–0.35ms 的 hrtimer 中断（guest 日志
+  里能看到 `hrtimer: interrupt took ... ns`），而 `perf_sample_ips()` 一轮要跑
+  400k 次触发、`main` 最多重试 5 轮，所以 KASLR-on 的泄露在 QEMU 里要跑很久
+  （实测**单轮 ~12 分钟** guest 时间）；这一环的权威验证仍在真机。
+
+  2026-10-01 实测（`KASLR=1 GLMODE="--verify-write"`）：TCG **能**采到内核 IP，
+  第一轮聚类给出的 slide 是 `0x1780e00000`，与独立从 `kimage_voffset` 算出的
+  真值**完全一致**；但 `perf_leak_stext()` 的验证段（要求 ≥3 个 IP 落在 15 个
+  内置符号各自 +0x40 范围内）得到 `ver=0`，于是判为
+  `perf slide cluster weak: best_n=2038 ver=0 ncand=22` 并返回 0。也就是说
+  QEMU 里卡住的不是采样、也不是聚类，而是那 15 个符号的窄验证窗口在 TCG 的
+  样本分布下命中不了（真机一次能采到 27651 个样本且能通过验证，QEMU 一个 bin
+  只有 2038/2941，两轮 `ver` 都是 0）。
+
+  **结论：不改 `perf_leak_stext()` 的判据。** 真机上这条链已经实测成功
+  （root README 的 `--escalate` 记录），QEMU 这里只是 TCG 采样分布的性质；
+  与其为了让 QEMU 通过而放宽判据、削弱真机上的安全性，不如让 QEMU 继续用
+  `nokaslr` + `--kaslr-base`。`KASLR=1` 只在需要单独排查泄露/映射本身时才用，
+  且要知道它会跑很久（≥12 分钟/轮）并且大概率停在这个验证段。
+- **不要用 QMP `pmemsave` 频繁 dump 2GB 内存**：每次都会把 guest 暂停很久，
+  容易把某个 attempt 的时序搅乱——实测有一次 restore attempt 的 fake waiter
+  `lock` 词被覆盖成栈上地址，walk 卡在 `rt_mutex_adjust_prio_chain` 的
+  `raw_spin_trylock` 重试循环（upstream `rtmutex.c:585`）里；单核 TCG 下
+  `cpu_relax()` 的 `yield` 把整个 VM 冻死（PC 固定在 0xffffff8008162f1c）。
+  用 `read_log.py` 默认的 kmsg/GDB 模式即可避免（每次只读 128KB）。
+- **已知 freeze 的判别/应对**：`gdb -ex 'x/i $pc'` 看到 PC 停在
+  `0xffffff8008162f1c`（`rt_mutex_adjust_prio_chain` 内 trylock 重试循环）就说明
+  单 vCPU 被该循环卡死，此时内核日志不再增长，任何等待都不会有结果——直接
+  `pkill qemu-system-aarch64` 重开。真机多核下同样场景只是烧掉一个核，attempt
+  超时后可以重试。
+- **第二种失败模式（oops 后 wedged）**：被 clobber 的 overlay 会让 walk 在
+  `rt_mutex_adjust_prio_chain` 里解引用垃圾指针并 oops
+  （样例：`Unable to handle kernel paging request at ffffff800ce83cf8`，
+  `exited with preempt_count 3`）。oops 本身只杀 attempt 子进程，但内核结构可能
+  已被打坏：实测整个 guest 变成所有 vCPU idle、父进程/ log 都不再前进（missed
+  wakeup），此时同样只能重开。判别：`read_log.py` 长时间无新行 + `info threads`
+  全是 halted。
+
+  2026-10-01 复跑的 10 次 boot 里命中 3 次，`oops` 落在
+  `rt_mutex_adjust_prio_chain+0x338`；更精确的判别是直接读 vCPU 寄存器（无需
+  GDB stub，QMP 里 `human-monitor-command` 跑 `cpu N` + `info registers`）：
+  8 个 CPU 全停在 `0xffffff8008162b58`/`2b68`（`queued_spin_lock_slowpath`
+  里的 `__cmpwait`：`ldxr/eor/cbnz/wfe`），且 `X01`（锁字地址）在 8 个核上
+  完全相同（例 `0xffffffc07a18bcac`）= oops 时留下的自旋锁没人释放。
+  **同一 boot 内重试无效**，直接重开。
+
+  注意两个易踩的坑：(1) `jiffies` 在这种状态下**仍然按 HZ 正常前进**（实测
+  8 秒墙钟涨 2000 tick，HZ=250），不能拿它判别死机；(2) 健康空转时 8 个
+  vCPU 也会停在同一个 PC 上（实测 `0xffffff80080ab194`，某函数尾部的
+  `ret`），要看 PC 值是不是 `0x8162b58`/`2b68` 那个 `__cmpwait` 循环。
+  归根结底最省事的判据还是"日志长时间不新增 + PC 在 `__cmpwait`"。
+- `--root` 端局（tmpfs + 4755 payload）已在 8 核 QEMU 完整通过：uid 2000 执行
+  `glsh` 返回 `euid=0`，wrapper 标记 `exited status=0x0 (SUCCESS)`。
+- **多 vCPU 的日志坑**：`-smp N>1` 时内核会按 CPU 数协商日志缓冲，把静态
+  `__log_buf` 换成动态分配的更大缓冲（8 核 = 1MB，`log_buf_len` 变量可见），
+  且 GDB 在 vCPU 处于 EL0 时读内核 VA 会失败/返回空。`read_log.py` 因此改为
+  QMP 物理读 + 追 `log_buf` 指针；手工读取时注意这一点（静态缓冲只会停在
+  `log_buf_len min size` 那一行）。

