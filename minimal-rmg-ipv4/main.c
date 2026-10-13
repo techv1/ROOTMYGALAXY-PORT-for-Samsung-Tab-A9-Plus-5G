@@ -124,9 +124,30 @@ static void run_worker_payload(void) {
         int bfd = open("/proc/sys/kernel/random/boot_id", O_RDONLY);
         if (bfd >= 0) {
             char bbuf[64] = {0};
-            read(bfd, bbuf, sizeof(bbuf)-1);
-            printf("[+] /proc/sys/kernel/random/boot_id readback: %s\n", bbuf);
+            ssize_t n = read(bfd, bbuf, sizeof(bbuf)-1);
             close(bfd);
+            if (n > 0) {
+                bbuf[n] = 0;
+                printf("[+] /proc/sys/kernel/random/boot_id readback: %s", bbuf);
+                /* Decode UUID string to 16 raw bytes */
+                unsigned char raw[16] = {0};
+                int high = -1, out = 0;
+                for (ssize_t i = 0; i < n && out < 16; i++) {
+                    char c = bbuf[i];
+                    int val = -1;
+                    if (c >= '0' && c <= '9') val = c - '0';
+                    else if (c >= 'a' && c <= 'f') val = c - 'a' + 10;
+                    else if (c >= 'A' && c <= 'F') val = c - 'A' + 10;
+                    if (val < 0) continue;
+                    if (high < 0) { high = val; }
+                    else { raw[out++] = (unsigned char)((high << 4) | val); high = -1; }
+                }
+                uint64_t lo = 0, hi = 0;
+                memcpy(&lo, raw, 8);
+                memcpy(&hi, raw + 8, 8);
+                printf("[+] Decoded kernel memory: lo=0x%016llx hi=0x%016llx\n",
+                       (unsigned long long)lo, (unsigned long long)hi);
+            }
         } else {
             printf("[-] Failed to open boot_id: errno=%d (%s)\n", errno, strerror(errno));
         }
